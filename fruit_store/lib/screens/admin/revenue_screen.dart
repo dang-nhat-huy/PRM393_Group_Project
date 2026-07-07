@@ -1,25 +1,25 @@
+// lib/screens/admin/revenue_screen.dart
 import 'package:flutter/material.dart';
 import '../../constants/app_theme.dart';
-import '../../constants/user.constant.dart';
-import '../../models/user.model.dart';
-import '../../services/user.service.dart';
+import '../../constants/order.constant.dart';
+import '../../models/order.model.dart';
+import '../../services/order.service.dart';
 import '../../widgets/pagination_bar.dart';
 import '../../widgets/status_badge.dart';
-import 'account_create.dart';
-import 'account_detail.dart';
-import 'account_search_result.dart';
+import 'order_detail_screen.dart';
+import 'revenue_search_result.dart';
 
-class AccountListScreen extends StatefulWidget {
-  final UserService userService;
+class RevenueScreen extends StatefulWidget {
+  final OrderService orderService;
 
-  const AccountListScreen({super.key, required this.userService});
+  const RevenueScreen({super.key, required this.orderService});
 
   @override
-  State<AccountListScreen> createState() => _AccountListScreenState();
+  State<RevenueScreen> createState() => _RevenueScreenState();
 }
 
-class _AccountListScreenState extends State<AccountListScreen> {
-  List<User> _users = [];
+class _RevenueScreenState extends State<RevenueScreen> {
+  List<Order> _orders = [];
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -32,14 +32,17 @@ class _AccountListScreenState extends State<AccountListScreen> {
   bool _hasPrevious = false;
 
   // Filters
-  UserStatus? _selectedStatus;
-  UserRole? _selectedRole;
+  OrderStatus? _selectedStatus;
   final TextEditingController _searchController = TextEditingController();
+
+  // Computed revenue totals (from current page data)
+  int _totalRevenue = 0;
+  double _averageOrderValue = 0;
 
   @override
   void initState() {
     super.initState();
-    _loadUsers();
+    _loadOrders();
   }
 
   @override
@@ -48,34 +51,39 @@ class _AccountListScreenState extends State<AccountListScreen> {
     super.dispose();
   }
 
-  Future<void> _loadUsers() async {
+  Future<void> _loadOrders() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
-    debugPrint(
-        'Loading users with status: $_selectedStatus, role: $_selectedRole');
     try {
-      final response = await widget.userService.getAll(
+      final response = await widget.orderService.getAll(
         pageSize: _pageSize,
         pageIndex: _pageIndex,
         status: _selectedStatus,
-        role: _selectedRole,
       );
 
+      final orders = response.items;
+      final totalRevenue =
+          orders.fold<int>(0, (sum, o) => sum + o.totalPrice);
+      final avgValue =
+          orders.isNotEmpty ? totalRevenue / orders.length : 0.0;
+
       setState(() {
-        _users = response.items;
+        _orders = orders;
         _totalItems = response.totalItemCount;
         _totalPages = response.totalPagesCount;
         _pageIndex = response.pageIndex;
         _hasNext = response.next;
         _hasPrevious = response.previous;
+        _totalRevenue = totalRevenue;
+        _averageOrderValue = avgValue;
         _isLoading = false;
       });
     } catch (e) {
       setState(() {
-        _errorMessage = 'Failed to load accounts: ${e.toString()}';
+        _errorMessage = 'Failed to load orders: ${e.toString()}';
         _isLoading = false;
       });
     }
@@ -87,56 +95,68 @@ class _AccountListScreenState extends State<AccountListScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => AccountSearchResultScreen(
-            userService: widget.userService,
-            emailQuery: query,
+          builder: (_) => RevenueSearchResultScreen(
+            orderService: widget.orderService,
+            query: query,
           ),
         ),
       );
     }
   }
 
-  Future<void> _refreshUsers() async {
+  Future<void> _refreshOrders() async {
     _pageIndex = 1;
-    await _loadUsers();
-  }
-
-  void _navigateToCreate() async {
-    final result = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AccountCreateScreen(userService: widget.userService),
-      ),
-    );
-    if (result == true) {
-      _refreshUsers();
-    }
-  }
-
-  void _navigateToDetail(User user) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => AccountDetailScreen(
-          user: user,
-          userService: widget.userService,
-        ),
-      ),
-    ).then((_) => _loadUsers());
+    await _loadOrders();
   }
 
   void _goToPage(int page) {
     setState(() {
       _pageIndex = page;
     });
-    _loadUsers();
+    _loadOrders();
+  }
+
+  void _navigateToDetail(Order order) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => OrderDetailScreen(
+          order: order,
+          orderService: widget.orderService,
+        ),
+      ),
+    );
+  }
+
+  Color _statusColor(OrderStatus? status) {
+    switch (status) {
+      case OrderStatus.pending:
+        return Colors.orange;
+      case OrderStatus.active:
+        return Colors.blue;
+      case OrderStatus.delivered:
+        return AppTheme.successGreen;
+      case OrderStatus.completed:
+        return const Color(0xFF1B5E20);
+      case OrderStatus.cancelled:
+        return AppTheme.errorRed;
+      default:
+        return AppTheme.textGray;
+    }
+  }
+
+  String _formatCurrency(int amount) {
+    return '₫${amount.toString().replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (match) => '${match[1]},',
+        )}';
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Account Management'),
+        title: const Text('Revenue Tracking'),
         actions: [
           IconButton(
             icon: const Icon(Icons.filter_list),
@@ -153,7 +173,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: 'Search by email...',
+                hintText: 'Search by customer name or email...',
                 prefixIcon:
                     const Icon(Icons.search, color: AppTheme.textGray),
                 suffixIcon: _searchController.text.isNotEmpty
@@ -172,50 +192,40 @@ class _AccountListScreenState extends State<AccountListScreen> {
           ),
 
           // Filter chips
-          if (_selectedStatus != null || _selectedRole != null)
+          if (_selectedStatus != null)
             Container(
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
               child: Row(
                 children: [
-                  if (_selectedStatus != null)
-                    Chip(
-                      label: Text(
-                          'Status: ${_selectedStatus!.name[0].toUpperCase() + _selectedStatus!.name.substring(1)}'),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () {
-                        setState(() {
-                          _selectedStatus = null;
-                        });
-                        _refreshUsers();
-                      },
+                  Chip(
+                    label: Text(
+                      'Status: ${_selectedStatus!.name[0].toUpperCase() + _selectedStatus!.name.substring(1)}',
                     ),
-                  if (_selectedRole != null)
-                    Chip(
-                      label: Text(
-                          'Role: ${_selectedRole!.name[0].toUpperCase() + _selectedRole!.name.substring(1)}'),
-                      deleteIcon: const Icon(Icons.close, size: 16),
-                      onDeleted: () {
-                        setState(() {
-                          _selectedRole = null;
-                        });
-                        _refreshUsers();
-                      },
-                    ),
+                    deleteIcon: const Icon(Icons.close, size: 16),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedStatus = null;
+                      });
+                      _refreshOrders();
+                    },
+                  ),
                   const Spacer(),
                   TextButton(
                     onPressed: () {
                       setState(() {
                         _selectedStatus = null;
-                        _selectedRole = null;
                       });
-                      _refreshUsers();
+                      _refreshOrders();
                     },
                     child: const Text('Clear All'),
                   ),
                 ],
               ),
             ),
+
+          // Revenue summary cards
+          _buildSummaryCards(),
 
           // Stats bar
           Container(
@@ -225,10 +235,19 @@ class _AccountListScreenState extends State<AccountListScreen> {
             child: Row(
               children: [
                 Text(
-                  '$_totalItems accounts found',
+                  '$_totalItems orders',
                   style: const TextStyle(
                     color: AppTheme.textGray,
                     fontSize: 13,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '·  ${_formatCurrency(_totalRevenue)} total',
+                  style: const TextStyle(
+                    color: AppTheme.textGray,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const Spacer(),
@@ -242,7 +261,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
           ),
 
           // Pagination
-          if (_hasNext)
+          if (_hasNext || _hasPrevious)
             PaginationBar(
               pageIndex: _pageIndex,
               totalPages: _totalPages,
@@ -252,10 +271,42 @@ class _AccountListScreenState extends State<AccountListScreen> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _navigateToCreate,
-        icon: const Icon(Icons.add),
-        label: const Text('Create Account'),
+    );
+  }
+
+  Widget _buildSummaryCards() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      color: AppTheme.white,
+      child: Row(
+        children: [
+          Expanded(
+            child: _SummaryCard(
+              icon: Icons.attach_money,
+              label: 'Revenue',
+              value: _formatCurrency(_totalRevenue),
+              color: AppTheme.successGreen,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _SummaryCard(
+              icon: Icons.shopping_cart,
+              label: 'Orders',
+              value: '$_totalItems',
+              color: AppTheme.primaryOrange,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: _SummaryCard(
+              icon: Icons.trending_up,
+              label: 'Avg / Order',
+              value: _formatCurrency(_averageOrderValue.round()),
+              color: Colors.blue,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -276,7 +327,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
             Text(_errorMessage!, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _refreshUsers,
+              onPressed: _refreshOrders,
               child: const Text('Retry'),
             ),
           ],
@@ -284,17 +335,17 @@ class _AccountListScreenState extends State<AccountListScreen> {
       );
     }
 
-    if (_users.isEmpty) {
+    if (_orders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline,
+            Icon(Icons.receipt_long,
                 size: 64,
                 color: AppTheme.textGray.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             const Text(
-              'No accounts found',
+              'No orders found',
               style: TextStyle(
                 fontSize: 18,
                 color: AppTheme.textGray,
@@ -302,9 +353,9 @@ class _AccountListScreenState extends State<AccountListScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              _selectedStatus != null || _selectedRole != null
+              _selectedStatus != null
                   ? 'Try adjusting your filters'
-                  : 'Click + to create a new account',
+                  : 'Orders will appear here',
               style: const TextStyle(color: AppTheme.textGray),
             ),
           ],
@@ -313,37 +364,23 @@ class _AccountListScreenState extends State<AccountListScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _refreshUsers,
+      onRefresh: _refreshOrders,
       child: ListView.separated(
         padding: const EdgeInsets.only(bottom: 16),
-        itemCount: _users.length,
+        itemCount: _orders.length,
         separatorBuilder: (_, _) => const Divider(height: 1),
         itemBuilder: (context, index) {
-          final user = _users[index];
-          return _buildUserTile(user);
+          final order = _orders[index];
+          return _buildOrderCard(order);
         },
       ),
     );
   }
 
-  Widget _buildUserTile(User user) {
-    final profile = user.accountProfile;
-    final fullName = profile?.fullName ?? 'No name';
-    final email = user.email;
-
-    Color statusColor;
-    switch (user.status) {
-      case UserStatus.active:
-        statusColor = AppTheme.successGreen;
-        break;
-      case UserStatus.deactivated:
-      case UserStatus.banned:
-        statusColor = AppTheme.errorRed;
-        break;
-      case UserStatus.suspended:
-        statusColor = Colors.orange;
-        break;
-    }
+  Widget _buildOrderCard(Order order) {
+    final itemCount = order.orderItems?.length ?? 0;
+    final customerName = order.fullname ?? 'Unknown';
+    final status = order.status;
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -353,42 +390,61 @@ class _AccountListScreenState extends State<AccountListScreen> {
         leading: CircleAvatar(
           backgroundColor: AppTheme.primaryOrange.withValues(alpha: 0.15),
           child: Text(
-            fullName.isNotEmpty
-                ? fullName[0].toUpperCase()
-                : email[0].toUpperCase(),
+            '#${order.orderId}',
             style: const TextStyle(
               color: AppTheme.primaryOrange,
               fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
           ),
         ),
-        title: Text(
-          fullName,
-          style: const TextStyle(fontWeight: FontWeight.w600),
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                customerName,
+                style: const TextStyle(fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              _formatCurrency(order.totalPrice),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: AppTheme.primaryOrange,
+                fontSize: 15,
+              ),
+            ),
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            Text(email, style: const TextStyle(fontSize: 12)),
-            const SizedBox(height: 4),
             Row(
               children: [
-                StatusBadge(
-                    text: user.role.name, color: AppTheme.primaryOrange),
+                Text(
+                  order.createdAt,
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
+                ),
                 const SizedBox(width: 8),
-                StatusBadge(
-                  text: user.status.name.toUpperCase(),
-                  color: statusColor,
-                  background: statusColor.withValues(alpha: 0.1),
+                Text(
+                  itemCount == 1 ? '1 item' : '$itemCount items',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textGray),
                 ),
               ],
             ),
+            const SizedBox(height: 6),
+            if (status != null)
+              StatusBadge(
+                text: status.name.toUpperCase(),
+                color: _statusColor(status),
+                background: _statusColor(status).withValues(alpha: 0.1),
+              ),
           ],
         ),
         trailing:
             const Icon(Icons.chevron_right, color: AppTheme.textGray),
-        onTap: () => _navigateToDetail(user),
+        onTap: () => _navigateToDetail(order),
       ),
     );
   }
@@ -408,7 +464,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
-                'Filter Accounts',
+                'Filter Orders',
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
@@ -422,7 +478,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 builder: (context, setStatus) {
                   return Wrap(
                     spacing: 8,
-                    children: UserStatus.values.map((status) {
+                    children: OrderStatus.values.map((status) {
                       final isSelected = _selectedStatus == status;
                       return ChoiceChip(
                         label: Text(status.name[0].toUpperCase() +
@@ -444,43 +500,13 @@ class _AccountListScreenState extends State<AccountListScreen> {
                   );
                 },
               ),
-              const SizedBox(height: 16),
-              const Text('Role',
-                  style: TextStyle(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 8),
-              StatefulBuilder(
-                builder: (context, setRole) {
-                  return Wrap(
-                    spacing: 8,
-                    children: UserRole.values.map((role) {
-                      final isSelected = _selectedRole == role;
-                      return ChoiceChip(
-                        label: Text(role.name[0].toUpperCase() +
-                            role.name.substring(1)),
-                        selected: isSelected,
-                        selectedColor: AppTheme.primaryOrange,
-                        labelStyle: TextStyle(
-                          color: isSelected
-                              ? AppTheme.white
-                              : AppTheme.textDark,
-                        ),
-                        onSelected: (selected) {
-                          setRole(() {
-                            _selectedRole = selected ? role : null;
-                          });
-                        },
-                      );
-                    }).toList(),
-                  );
-                },
-              ),
               const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () {
                     Navigator.pop(context);
-                    _refreshUsers();
+                    _refreshOrders();
                   },
                   child: const Text('Apply Filters'),
                 ),
@@ -489,6 +515,57 @@ class _AccountListScreenState extends State<AccountListScreen> {
           ),
         );
       },
+    );
+  }
+}
+
+// ── Summary Card widget ──
+
+class _SummaryCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _SummaryCard({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: AppTheme.textGray,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

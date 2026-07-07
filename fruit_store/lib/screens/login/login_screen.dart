@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
-import '../../services/user.service.dart';
-import '../admin/account_list.dart';
+import '../admin/admin_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,7 +16,6 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordController = TextEditingController();
   final _apiService = ApiService();
   late final _authService = AuthService(_apiService);
-  late final _userService = UserService(_apiService);
 
   bool _isLoading = false;
   String? _error;
@@ -50,7 +48,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (_) => AccountListScreen(userService: _userService),
+            builder: (_) => AdminHomeScreen(apiService: _apiService),
           ),
         );
       }
