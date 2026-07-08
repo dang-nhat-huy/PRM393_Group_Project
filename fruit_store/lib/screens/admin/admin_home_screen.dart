@@ -6,6 +6,7 @@ import '../../services/user.service.dart';
 import '../../services/order.service.dart';
 import 'account_list.dart';
 import 'revenue_screen.dart';
+import '../chatbot/chatbot_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   final ApiService apiService;
@@ -34,6 +35,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final screens = [
       AccountListScreen(userService: _userService),
       RevenueScreen(orderService: _orderService),
+      const ChatbotScreen(),
     ];
 
     return Scaffold(
@@ -57,6 +59,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             icon: Icon(Icons.receipt_long_outlined),
             activeIcon: Icon(Icons.receipt_long),
             label: 'Revenue',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.chat_bubble_outline),
+            activeIcon: Icon(Icons.chat_bubble),
+            label: 'Chat',
           ),
         ],
       ),
