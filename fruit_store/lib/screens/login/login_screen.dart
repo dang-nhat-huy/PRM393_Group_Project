@@ -3,6 +3,7 @@ import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
 import '../admin/admin_home_screen.dart';
+import '../staff/staff_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,19 +44,62 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.login(email, password);
-      if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminHomeScreen(apiService: _apiService),
-          ),
-        );
+      final auth = await _authService.login(
+        email,
+        password,
+      );
+
+      if (!mounted) return;
+
+      switch (auth.role) {
+        case "Admin":
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminHomeScreen(
+                apiService: _apiService,
+              ),
+            ),
+          );
+          break;
+
+        case "Staff":
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StaffDashboardScreen(
+                apiService: _apiService,
+              ),
+            ),
+          );
+          break;
+
+        // case "Customer":
+        //   Navigator.pushReplacement(
+        //     context,
+        //     MaterialPageRoute(
+        //       builder: (_) => CustomerHomeScreen(
+        //         apiService: _apiService,
+        //       ),
+        //     ),
+        //   );
+        //   break;
+
+        default:
+          setState(() {
+            _error = "Role '${auth.role}' is not supported";
+          });
       }
     } catch (e) {
-      setState(() => _error = 'Login failed. Check your credentials.');
+      setState(() {
+        _error = 'Login failed. Check your credentials.';
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

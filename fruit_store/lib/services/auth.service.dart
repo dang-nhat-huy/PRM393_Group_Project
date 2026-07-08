@@ -1,4 +1,7 @@
 // lib/services/auth.service.dart
+import 'package:jwt_decoder/jwt_decoder.dart';
+
+import '../models/auth_result.dart';
 import 'api.service.dart';
 
 /// Handles authentication: login, register, logout.
@@ -10,17 +13,30 @@ class AuthService {
 
   /// Logs in with [email] and [password].
   /// Returns the JWT token.
-  Future<String> login(
-    String email,
-    String password,
-  ) async {
-    final data = await _api.post('/api/v1/account/login', data: {
-      'email': email,
-      'password': password,
-    });
-    final token = data['token'] as String;
+  Future<AuthResult> login(
+      String email,
+      String password,
+      ) async {
+
+    final data = await _api.post(
+      '/api/v1/account/login',
+      data: {
+        'email': email,
+        'password': password,
+      },
+    );
+
+    final token = data["token"] as String;
+
     _api.setToken(token);
-    return token;
+
+    final decoded = JwtDecoder.decode(token);
+
+    return AuthResult(
+      token: token,
+      role: decoded["role"],
+      accountId: int.parse(decoded["nameid"]),
+    );
   }
 
   /// Registers a new user with [email], [password], and [confirmPassword].
