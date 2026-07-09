@@ -12,29 +12,32 @@ class OrderInformationCard extends StatelessWidget {
   });
 
   Color _statusColor(OrderStatus? status) {
-    switch (status) {
-      case OrderStatus.pending:
-        return Colors.orange;
+  switch (status) {
+    case OrderStatus.unpaid:
+      return Colors.orange;
 
-      case OrderStatus.paid:
-        return Colors.blue;
+    case OrderStatus.paid:
+      return Colors.blue;
 
-      case OrderStatus.active:
-        return Colors.indigo;
+    case OrderStatus.undischarged:
+      return Colors.indigo;
 
-      case OrderStatus.delivered:
-        return Colors.teal;
+    case OrderStatus.pending:
+      return Colors.amber;
 
-      case OrderStatus.completed:
-        return Colors.green;
+    case OrderStatus.delivered:
+      return Colors.teal;
 
-      case OrderStatus.cancelled:
-        return Colors.red;
+    case OrderStatus.completed:
+      return Colors.green;
 
-      default:
-        return Colors.grey;
-    }
+    case OrderStatus.cancelled:
+      return Colors.red;
+
+    default:
+      return Colors.grey;
   }
+}
 
   String _statusText(OrderStatus? status) {
     if (status == null) return "-";

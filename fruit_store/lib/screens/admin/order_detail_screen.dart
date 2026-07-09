@@ -34,7 +34,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.active:
+      case OrderStatus.paid:
         return Colors.blue;
       case OrderStatus.delivered:
         return AppTheme.successGreen;
@@ -149,7 +149,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
       appBar: AppBar(
         title: Text('Order #${_order.orderId}'),
         actions: [
-          if (status == OrderStatus.active)
+          if (status == OrderStatus.paid)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert),
               onSelected: _updateStatus,

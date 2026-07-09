@@ -34,7 +34,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   final List<String> filters = const [
     "All",
-    "Unpaid",
     "Paid",
     "Undischarged",
     "Pending",
@@ -78,9 +77,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
       switch (statusFilter) {
         case "All":
           status = null;
-          break;
-        case "Unpaid":
-          status = "UNPAID";
           break;
         case "Paid":
           status = "PAID";
