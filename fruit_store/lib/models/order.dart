@@ -63,3 +63,38 @@ class OrderItem {
     );
   }
 }
+
+class PaginatedOrderResponse {
+  final int totalItemCount;
+  final int pageSize;
+  final int totalPagesCount;
+  final int pageIndex;
+  final bool next;
+  final bool previous;
+  final List<Order> items;
+
+  const PaginatedOrderResponse({
+    required this.totalItemCount,
+    required this.pageSize,
+    required this.totalPagesCount,
+    required this.pageIndex,
+    required this.next,
+    required this.previous,
+    required this.items,
+  });
+
+  factory PaginatedOrderResponse.fromJson(
+      Map<String, dynamic> json) {
+    return PaginatedOrderResponse(
+      totalItemCount: json['totalItemCount'] ?? 0,
+      pageSize: json['pageSize'] ?? 20,
+      totalPagesCount: json['totalPagesCount'] ?? 1,
+      pageIndex: json['pageIndex'] ?? 1,
+      next: json['next'] ?? false,
+      previous: json['previous'] ?? false,
+      items: (json['items'] as List<dynamic>? ?? [])
+          .map((e) => Order.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}

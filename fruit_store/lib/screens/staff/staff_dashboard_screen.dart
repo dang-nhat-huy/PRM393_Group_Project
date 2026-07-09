@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:fruit_store/models/order.model.dart';
+import 'package:fruit_store/screens/staff/order_detail_screen.dart';
 
-import '../../models/order.dart';
 import '../../services/api.service.dart';
 import '../../services/staff.service.dart';
 
+import '../../widgets/order/order_card.dart';
 import '../../widgets/order/order_filter_bar.dart';
 import '../../widgets/order/order_search_bar.dart';
-import '../../widgets/order/order_table.dart';
+import '../../widgets/pagination_bar.dart';
 
 class StaffDashboardScreen extends StatefulWidget {
   final ApiService apiService;
@@ -26,19 +28,34 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   bool isLoading = true;
 
-  String error = '';
+  String error = "";
 
   String statusFilter = "All";
 
   final List<String> filters = const [
     "All",
+    "Unpaid",
     "Paid",
+    "Undischarged",
     "Pending",
-    "Processing",
     "Delivered",
     "Completed",
     "Cancelled",
   ];
+
+  // Pagination
+
+  int pageIndex = 1;
+
+  int totalPages = 1;
+
+  int totalItems = 0;
+
+  bool hasNext = false;
+
+  bool hasPrevious = false;
+
+  final int pageSize = 10;
 
   @override
   void initState() {
@@ -56,10 +73,53 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     });
 
     try {
-      final result = await _orderService.getOrders();
+      String? status;
+
+      switch (statusFilter) {
+        case "All":
+          status = null;
+          break;
+        case "Unpaid":
+          status = "UNPAID";
+          break;
+        case "Paid":
+          status = "PAID";
+          break;
+        case "Undischarged":
+          status = "UNDISCHARGED";
+          break;
+        case "Pending":
+          status = "PENDING";
+          break;
+        case "Delivered":
+          status = "DELIVERED";
+          break;
+        case "Completed":
+          status = "COMPLETED";
+          break;
+        case "Cancelled":
+          status = "CANCELLED";
+          break;
+      }
+
+      final response = await _orderService.getOrders(
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+        status: status,
+      );
 
       setState(() {
-        orders = result;
+        orders = response.items;
+
+        totalItems = response.totalItemCount;
+
+        totalPages = response.totalPagesCount;
+
+        pageIndex = response.pageIndex;
+
+        hasNext = response.next;
+
+        hasPrevious = response.previous;
       });
     } catch (e) {
       setState(() {
@@ -76,6 +136,7 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
   Future<void> searchOrderById(String value) async {
     if (value.trim().isEmpty) {
+      pageIndex = 1;
       fetchOrders();
       return;
     }
@@ -94,6 +155,16 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         } else {
           orders = [order];
         }
+
+        totalItems = orders.length;
+
+        totalPages = 1;
+
+        pageIndex = 1;
+
+        hasNext = false;
+
+        hasPrevious = false;
       });
     } catch (e) {
       setState(() {
@@ -108,6 +179,72 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
     }
   }
 
+  Widget _buildContent() {
+    if (isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (error.isNotEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 60, color: Colors.red),
+
+            const SizedBox(height: 16),
+
+            Text(error, textAlign: TextAlign.center),
+
+            const SizedBox(height: 16),
+
+            ElevatedButton(onPressed: fetchOrders, child: const Text("Retry")),
+          ],
+        ),
+      );
+    }
+
+    if (orders.isEmpty) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 70, color: Colors.grey),
+
+            SizedBox(height: 16),
+
+            Text("No orders found", style: TextStyle(fontSize: 18)),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: fetchOrders,
+      child: ListView.builder(
+        padding: const EdgeInsets.only(top: 8, bottom: 16),
+        itemCount: orders.length,
+        itemBuilder: (context, index) {
+          final order = orders[index];
+
+          return OrderCard(
+            order: order,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OrderDetailScreen(
+                    orderId: order.orderId,
+                    apiService: widget.apiService,
+                  ),
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -118,93 +255,87 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-
       backgroundColor: Colors.grey.shade100,
-
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// ===========================
-            /// Search + Filter
-            /// ===========================
-            Row(
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  flex: 3,
-                  child: OrderSearchBar(
-                    controller: _searchController,
-
-                    onSubmitted: (value) {
-                      searchOrderById(value);
-                    },
-
-                    onChanged: (value) {
-                      if (value.isEmpty) {
-                        fetchOrders();
-                      }
-                    },
-
-                    onClear: () {
+                /// Search
+                OrderSearchBar(
+                  controller: _searchController,
+                  onSubmitted: (value) {
+                    searchOrderById(value);
+                  },
+                  onChanged: (value) {
+                    if (value.isEmpty) {
+                      pageIndex = 1;
                       fetchOrders();
-                    },
-                  ),
+                    }
+                  },
+                  onClear: () {
+                    pageIndex = 1;
+                    fetchOrders();
+                  },
                 ),
 
-                const SizedBox(width: 16),
+                const SizedBox(height: 16),
 
-                Expanded(
-                  flex: 2,
-                  child: OrderFilterBar(
-                    filters: filters,
+                /// Filter
+                OrderFilterBar(
+                  filters: filters,
+                  selectedFilter: statusFilter,
+                  onSelected: (value) {
+                    setState(() {
+                      statusFilter = value;
+                      pageIndex = 1;
+                    });
 
-                    selectedFilter: statusFilter,
-
-                    onSelected: (value) {
-                      setState(() {
-                        statusFilter = value;
-                      });
-
-
-                    },
-                  ),
+                    fetchOrders();
+                  },
                 ),
+
+                const SizedBox(height: 16),
+
+                /// Total Orders
+                Row(
+                  children: [
+                    Text(
+                      "$totalItems Orders",
+                      style: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 8),
               ],
             ),
+          ),
 
-            const SizedBox(height: 16),
+          /// Order List
+          Expanded(child: _buildContent()),
 
-            /// ===========================
-            /// Table
-            /// ===========================
-            Expanded(
-              child: OrderTable(
-                orders: orders,
+          /// Pagination
+          if (!isLoading && error.isEmpty && orders.isNotEmpty)
+            PaginationBar(
+              pageIndex: pageIndex,
+              totalPages: totalPages,
+              hasNext: hasNext,
+              hasPrevious: hasPrevious,
+              onPageChanged: (page) {
+                setState(() {
+                  pageIndex = page;
+                });
 
-                isLoading: isLoading,
-
-                error: error,
-
-                onRefresh: fetchOrders,
-
-                onViewDetail: (order) {
-                  print("Order ID: ${order.orderId}");
-
-                  /// TODO
-                  ///
-                  /// Navigator.push(
-                  ///   context,
-                  ///   MaterialPageRoute(
-                  ///      builder: (_) =>
-                  ///      OrderDetailScreen(order: order),
-                  ///   ),
-                  /// );
-                },
-              ),
+                fetchOrders();
+              },
             ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -212,7 +343,6 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   @override
   void dispose() {
     _searchController.dispose();
-
     super.dispose();
   }
 }

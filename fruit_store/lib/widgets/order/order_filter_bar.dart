@@ -12,34 +12,68 @@ class OrderFilterBar extends StatelessWidget {
     required this.onSelected,
   });
 
+  Color _chipColor(String filter) {
+    switch (filter.toLowerCase()) {
+      case "pending":
+        return Colors.orange;
+
+      case "processing":
+        return Colors.blue;
+
+      case "delivered":
+        return Colors.green;
+
+      case "completed":
+        return const Color(0xFF1B5E20);
+
+      case "cancelled":
+        return Colors.red;
+
+      case "paid":
+        return Colors.teal;
+
+      default:
+        return Colors.deepOrange;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 42,
+      height: 46,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (context, index) {
+        itemBuilder: (_, index) {
           final filter = filters[index];
           final selected = filter == selectedFilter;
 
           return ChoiceChip(
             label: Text(filter),
             selected: selected,
-            showCheckmark: false,
-            labelStyle: TextStyle(
-              color: selected ? Colors.white : Colors.black87,
-              fontWeight: FontWeight.w600,
-            ),
-            backgroundColor: Colors.grey.shade200,
-            selectedColor: Colors.deepOrange,
+            onSelected: (_) => onSelected(filter),
+
+            selectedColor: _chipColor(filter),
+
+            backgroundColor: Colors.white,
+
             side: BorderSide(
               color: selected
-                  ? Colors.deepOrange
+                  ? _chipColor(filter)
                   : Colors.grey.shade300,
             ),
-            onSelected: (_) => onSelected(filter),
+
+            labelStyle: TextStyle(
+              color: selected
+                  ? Colors.white
+                  : Colors.black87,
+              fontWeight: FontWeight.w500,
+            ),
+
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
           );
         },
       ),
