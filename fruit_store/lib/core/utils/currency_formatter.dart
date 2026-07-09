@@ -10,3 +10,14 @@ class CurrencyFormatter {
     return '${formatted}đ';
   }
 }
+
+class UnitFormatter {
+  static String display(String unit) {
+    switch (unit.trim().toLowerCase()) {
+      case 'bó':
+        return 'kg';
+      default:
+        return unit;
+    }
+  }
+}

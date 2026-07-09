@@ -78,6 +78,238 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  void _openSideMenu() {
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'Menu',
+      barrierColor: Colors.black.withOpacity(0.55),
+      transitionDuration: const Duration(milliseconds: 260),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return Align(
+          alignment: Alignment.centerRight,
+          child: Material(
+            color: Colors.transparent,
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.78,
+              height: double.infinity,
+              decoration: const BoxDecoration(
+                color: Color(0xFF171717),
+                borderRadius: BorderRadius.horizontal(
+                  left: Radius.circular(22),
+                ),
+              ),
+              child: SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(18, 18, 18, 22),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: GestureDetector(
+                          onTap: () => Navigator.pop(context),
+                          child: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 34,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      _buildSideMenuItem(
+                        icon: Icons.login,
+                        title: 'Login',
+                        subtitle: 'Đăng nhập tài khoản',
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.pushNamed(context, '/login');
+                        },
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildDisabledSideMenuItem(
+                        icon: Icons.person_outline,
+                        title: 'Thông tin cá nhân',
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildDisabledSideMenuItem(
+                        icon: Icons.shopping_basket_outlined,
+                        title: 'Giỏ hàng của tôi',
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      _buildDisabledSideMenuItem(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'Đơn hàng',
+                      ),
+
+                      const Spacer(),
+
+                      const Center(
+                        child: Text(
+                          'Fruit Store',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 6),
+
+                      const Center(
+                        child: Text(
+                          'Phiên bản: 1.0.0',
+                          style: TextStyle(
+                            color: Colors.white38,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        final curvedAnimation = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+        );
+
+        return SlideTransition(
+          position: Tween<Offset>(
+            begin: const Offset(1, 0),
+            end: Offset.zero,
+          ).animate(curvedAnimation),
+          child: child,
+        );
+      },
+    );
+  }
+
+  Widget _buildSideMenuItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        decoration: BoxDecoration(
+          color: const Color(0xFF333333),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.person,
+                color: AppColors.primaryOrange,
+                size: 24,
+              ),
+            ),
+
+            const SizedBox(width: 16),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: Colors.white54,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.white54,
+              size: 16,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDisabledSideMenuItem({
+    required IconData icon,
+    required String title,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+      decoration: BoxDecoration(
+        color: const Color(0xFF303030),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            icon,
+            color: AppColors.primaryOrange,
+            size: 27,
+          ),
+
+          const SizedBox(width: 18),
+
+          Expanded(
+            child: Text(
+              title,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+
+          const Icon(
+            Icons.lock_outline,
+            color: Colors.white24,
+            size: 18,
+          ),
+        ],
+      ),
+    );
+  }
+
   void _goToCart() {
     Navigator.pushNamed(context, '/cart');
   }
@@ -167,8 +399,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
                           crossAxisCount: 2,
                           mainAxisSpacing: 18,
                           crossAxisSpacing: 16,
-                          childAspectRatio: 0.66,
-                        ),
+                          mainAxisExtent: 255,                        ),
                       ),
                     ),
                 ],
@@ -190,7 +421,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
             children: [
               _buildIconButton(
                 icon: Icons.menu,
-                onTap: () {},
+                onTap: _openSideMenu,
               ),
 
               const Spacer(),

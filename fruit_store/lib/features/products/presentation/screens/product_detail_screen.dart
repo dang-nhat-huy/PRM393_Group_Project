@@ -41,7 +41,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Đã thêm $quantity ${product.unit} ${product.productName.trim()} vào giỏ hàng',
+          'Đã thêm $quantity ${UnitFormatter.display(product.unit)} ${product.productName.trim()} vào giỏ hàng',
         ),
         backgroundColor: AppColors.primaryOrange,
         behavior: SnackBarBehavior.floating,
@@ -231,13 +231,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             _buildInfoRow(
               icon: Icons.inventory_2_outlined,
               label: 'Đơn vị',
-              value: product.unit,
+              value: UnitFormatter.display(product.unit),
             ),
 
             _buildInfoRow(
               icon: Icons.storefront_outlined,
               label: 'Tồn kho',
-              value: '${product.stockQuantity} ${product.unit}',
+              value: '${product.stockQuantity} ${UnitFormatter.display(product.unit)}',
             ),
 
             _buildInfoRow(
