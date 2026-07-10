@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fruit_store/widgets/order/order_action_card.dart';
 
 import '../../models/order.model.dart';
 import '../../services/api.service.dart';
@@ -19,16 +20,14 @@ class OrderDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<OrderDetailScreen> createState() =>
-      _OrderDetailScreenState();
+  State<OrderDetailScreen> createState() => _OrderDetailScreenState();
 }
 
-class _OrderDetailScreenState
-    extends State<OrderDetailScreen> {
+class _OrderDetailScreenState extends State<OrderDetailScreen> {
   late final StaffOrderService _orderService;
 
   Order? order;
-
+  bool _updated = false;
   bool isLoading = true;
 
   String error = "";
@@ -49,8 +48,7 @@ class _OrderDetailScreenState
     });
 
     try {
-      final result =
-          await _orderService.getOrderById(widget.orderId);
+      final result = await _orderService.getOrderById(widget.orderId);
 
       setState(() {
         order = result;
@@ -68,10 +66,54 @@ class _OrderDetailScreenState
     }
   }
 
+  Future<void> _deliverOrder() async {
+    await _orderService.updateDeliveryStatus(widget.orderId);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Order marked as Delivered")));
+    _updated = true;
+    await fetchOrder();
+  }
+
+  Future<void> _completeOrder() async {
+    await _orderService.updateCompletedStatus(widget.orderId);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Order marked as Completed")));
+    _updated = true;
+
+    await fetchOrder();
+  }
+
+  Future<void> _cancelOrder() async {
+    await _orderService.updateCancelStatus(widget.orderId);
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text("Order Cancelled")));
+    _updated = true;
+
+    await fetchOrder();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context, _updated);
+          },
+        ),
         title: Text("Order #${widget.orderId}"),
         centerTitle: true,
         backgroundColor: Colors.deepOrange,
@@ -86,49 +128,29 @@ class _OrderDetailScreenState
 
   Widget _buildBody() {
     if (isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (error.isNotEmpty) {
-      return Center(
-        child: Text(error),
-      );
+      return Center(child: Text(error));
     }
 
     if (order == null) {
-      return const Center(
-        child: Text("Order not found"),
-      );
+      return const Center(child: Text("Order not found"));
     }
 
     return RefreshIndicator(
       onRefresh: fetchOrder,
       child: ListView(
-        padding: const EdgeInsets.only(
-          top: 12,
-          bottom: 24,
-        ),
+        padding: const EdgeInsets.only(top: 12, bottom: 24),
         children: [
-          /// Customer
-          CustomerInformationCard(
-            order: order!,
-          ),
+          CustomerInformationCard(order: order!),
 
-          /// Order
-          OrderInformationCard(
-            order: order!,
-          ),
+          OrderInformationCard(order: order!),
 
           /// Products Title
           const Padding(
-            padding: EdgeInsets.fromLTRB(
-              20,
-              16,
-              20,
-              8,
-            ),
+            padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
             child: Text(
               "Products",
               style: TextStyle(
@@ -141,12 +163,19 @@ class _OrderDetailScreenState
 
           /// Products
           ...(order!.orderDetails ?? [])
-              .map(
-                (item) => ProductCard(
-                  item: item,
-                ),
-              )
+              .map((item) => ProductCard(item: item))
               .toList(),
+
+          const SizedBox(height: 12),
+
+          OrderActionCard(
+            status: order!.status,
+            onDeliver: _deliverOrder,
+            onComplete: _completeOrder,
+            onCancel: _cancelOrder,
+          ),
+
+          const SizedBox(height: 16),
         ],
       ),
     );

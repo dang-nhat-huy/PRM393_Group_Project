@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:fruit_store/models/order.model.dart';
 import 'package:fruit_store/screens/staff/order_detail_screen.dart';
+import 'package:fruit_store/screens/staff/product_screen.dart';
+import 'package:fruit_store/widgets/staff/staff_bottom_navigation.dart';
 
 import '../../services/api.service.dart';
 import '../../services/staff.service.dart';
@@ -53,6 +55,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
   bool hasNext = false;
 
   bool hasPrevious = false;
+
+  int _selectedIndex = 0;
 
   final int pageSize = 10;
 
@@ -224,8 +228,8 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
 
           return OrderCard(
             order: order,
-            onTap: () {
-              Navigator.push(
+            onTap: () async {
+              final updated = await Navigator.push<bool>(
                 context,
                 MaterialPageRoute(
                   builder: (_) => OrderDetailScreen(
@@ -234,6 +238,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
                   ),
                 ),
               );
+
+              if (updated == true) {
+                fetchOrders();
+              }
             },
           );
         },
@@ -332,6 +340,28 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
               },
             ),
         ],
+      ),
+      bottomNavigationBar: StaffBottomNavigation(
+        currentIndex: _selectedIndex,
+        onTap: (index) {
+          if (index == _selectedIndex) return;
+
+          setState(() {
+            _selectedIndex = index;
+          });
+
+          switch (index) {
+            case 0:
+              break;
+
+            case 1:
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProductScreen()),
+              );
+              break;
+          }
+        },
       ),
     );
   }
