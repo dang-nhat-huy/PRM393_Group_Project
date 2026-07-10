@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fruit_store/models/order.model.dart';
 import 'package:fruit_store/screens/staff/order_detail_screen.dart';
-import 'package:fruit_store/screens/staff/product_screen.dart';
+import 'package:fruit_store/screens/staff/product_list_screen.dart';
 import 'package:fruit_store/widgets/staff/staff_bottom_navigation.dart';
 
 import '../../services/api.service.dart';
@@ -357,7 +357,10 @@ class _StaffDashboardScreenState extends State<StaffDashboardScreen> {
             case 1:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProductScreen()),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      ProductListScreen(apiService: widget.apiService),
+                ),
               );
               break;
           }
