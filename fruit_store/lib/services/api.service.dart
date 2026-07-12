@@ -51,8 +51,15 @@ class ApiService {
     String path, {
     Map<String, dynamic>? query,
   }) async {
-    final response = await _dio.get(path, queryParameters: query);
-    return _handleResponse(response);
+    try {
+      final response = await _dio.get(path, queryParameters: query);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      print("GET: $path");
+      print("STATUS: ${e.response?.statusCode}");
+      print("BODY: ${e.response?.data}");
+      rethrow;
+    }
   }
 
   /// Sends a POST request to [path] with an optional [data] body.

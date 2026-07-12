@@ -1,3 +1,4 @@
+import 'package:fruit_store/models/category_model.dart';
 import 'package:fruit_store/models/product.model.dart';
 import 'package:fruit_store/models/product_update_request.dart';
 
@@ -62,7 +63,21 @@ class ProductService {
     return Product.fromJson(response["data"]);
   }
 
+  /// =========================
+  /// Update Product
+  /// =========================
   Future<void> updateProduct(int id, ProductUpdateRequest request) async {
     await _api.put("/api/v1/products/update/$id", data: request.toJson());
+  }
+
+  /// =========================
+  /// Get Categories By ID
+  /// =========================
+  Future<List<Category>> getCategories() async {
+    final response = await _api.get("/api/v1/category/get-all");
+
+    final List items = response["data"] as List;
+
+    return items.map((e) => Category.fromJson(e)).toList();
   }
 }

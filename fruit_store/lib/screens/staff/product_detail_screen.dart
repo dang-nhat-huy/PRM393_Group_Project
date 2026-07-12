@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fruit_store/screens/staff/product_edit_screen.dart';
 
 import '../../models/product.model.dart';
 import '../../services/api.service.dart';
@@ -15,12 +16,10 @@ class ProductDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<ProductDetailScreen> createState() =>
-      _ProductDetailScreenState();
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
 }
 
-class _ProductDetailScreenState
-    extends State<ProductDetailScreen> {
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
   late final ProductService _productService;
 
   Product? product;
@@ -45,10 +44,7 @@ class _ProductDetailScreenState
     });
 
     try {
-      final result =
-          await _productService.getProductById(
-        widget.productId,
-      );
+      final result = await _productService.getProductById(widget.productId);
 
       setState(() {
         product = result;
@@ -69,30 +65,18 @@ class _ProductDetailScreenState
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (error.isNotEmpty) {
       return Scaffold(
-        appBar: AppBar(
-          title: const Text("Product"),
-        ),
-        body: Center(
-          child: Text(error),
-        ),
+        appBar: AppBar(title: const Text("Product")),
+        body: Center(child: Text(error)),
       );
     }
 
     if (product == null) {
-      return const Scaffold(
-        body: Center(
-          child: Text("Product not found"),
-        ),
-      );
+      return const Scaffold(body: Center(child: Text("Product not found")));
     }
 
     return Scaffold(
@@ -101,11 +85,7 @@ class _ProductDetailScreenState
         onRefresh: fetchProduct,
         child: ListView(
           physics: const AlwaysScrollableScrollPhysics(),
-          children: [
-            _buildTopSection(),
-
-            _buildInfoSection(),
-          ],
+          children: [_buildTopSection(), _buildInfoSection()],
         ),
       ),
     );
@@ -131,8 +111,7 @@ class _ProductDetailScreenState
                   ),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius:
-                        BorderRadius.circular(100),
+                    borderRadius: BorderRadius.circular(100),
                   ),
                   child: const Row(
                     mainAxisSize: MainAxisSize.min,
@@ -145,9 +124,49 @@ class _ProductDetailScreenState
                       SizedBox(width: 5),
                       Text(
                         "Go back",
-                        style: TextStyle(
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 14,
+              right: 18,
+              child: GestureDetector(
+                onTap: () async {
+                  final updated = await Navigator.push<bool>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProductEditScreen(
+                        productId: widget.productId,
+                        apiService: widget.apiService,
+                      ),
+                    ),
+                  );
+
+                  if (updated == true) {
+                    fetchProduct();
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(100),
+                  ),
+                  child: const Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.edit, size: 18, color: Colors.deepOrange),
+                      SizedBox(width: 6),
+                      Text(
+                        "Edit",
+                        style: TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -159,32 +178,23 @@ class _ProductDetailScreenState
               top: 48,
               child: Center(
                 child: Hero(
-                  tag:
-                      "product-image-${product!.productId}",
+                  tag: "product-image-${product!.productId}",
                   child: Container(
                     width: 215,
                     height: 215,
                     decoration: BoxDecoration(
-                      color:
-                          Colors.white.withOpacity(.18),
+                      color: Colors.white.withOpacity(.18),
                       shape: BoxShape.circle,
                     ),
                     child: Padding(
-                      padding:
-                          const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(10),
                       child: ClipOval(
                         child: Image.network(
                           product!.image ?? "",
                           fit: BoxFit.cover,
-                          errorBuilder:
-                              (_, __, ___) =>
-                                  Container(
-                            color:
-                                Colors.grey.shade200,
-                            child: const Icon(
-                              Icons.image,
-                              size: 60,
-                            ),
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(Icons.image, size: 60),
                           ),
                         ),
                       ),
@@ -202,21 +212,13 @@ class _ProductDetailScreenState
   Widget _buildInfoSection() {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        24,
-        26,
-        24,
-        24,
-      ),
+      padding: const EdgeInsets.fromLTRB(24, 26, 24, 24),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(28),
-        ),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       child: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             product!.productName,
@@ -244,19 +246,15 @@ class _ProductDetailScreenState
 
           const SizedBox(height: 18),
 
-          _buildSectionTitle(
-              "Product Information"),
+          _buildSectionTitle("Product Information"),
 
-          const SizedBox(height: 16),       
+          const SizedBox(height: 16),
 
           _buildInfoRow(
             Icons.inventory_2_outlined,
             "Stock",
             "${product!.stockQuantity} kg",
           ),
-                  
-
-          
 
           _buildInfoRow(
             Icons.category_outlined,
@@ -264,13 +262,7 @@ class _ProductDetailScreenState
             product!.categoryName ?? "-",
           ),
 
-          _buildInfoRow(
-            Icons.eco,
-            "Crop",
-            product!.cropName ?? "-",
-          ),
-
-          
+          _buildInfoRow(Icons.eco, "Crop", product!.cropName ?? "-"),
 
           _buildInfoRow(
             Icons.check_circle_outline,
@@ -285,8 +277,7 @@ class _ProductDetailScreenState
           const SizedBox(height: 12),
 
           Text(
-            product!.description?.isNotEmpty ==
-                    true
+            product!.description?.isNotEmpty == true
                 ? product!.description!
                 : "No description",
             style: const TextStyle(
@@ -300,12 +291,9 @@ class _ProductDetailScreenState
     );
   }
 
-  Widget _buildSectionTitle(
-    String title,
-  ) {
+  Widget _buildSectionTitle(String title) {
     return Column(
-      crossAxisAlignment:
-          CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
@@ -321,31 +309,20 @@ class _ProductDetailScreenState
           height: 3,
           decoration: BoxDecoration(
             color: Colors.deepOrange,
-            borderRadius:
-                BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(10),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildInfoRow(
-    IconData icon,
-    String label,
-    String value,
-  ) {
+  Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding:
-          const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
-        crossAxisAlignment:
-            CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            icon,
-            color: Colors.deepOrange,
-            size: 19,
-          ),
+          Icon(icon, color: Colors.deepOrange, size: 19),
 
           const SizedBox(width: 10),
 
@@ -364,10 +341,8 @@ class _ProductDetailScreenState
             child: Text(
               value,
               style: const TextStyle(
-                fontWeight:
-                    FontWeight.bold,
-                color:
-                    Color(0xff27214D),
+                fontWeight: FontWeight.bold,
+                color: Color(0xff27214D),
               ),
             ),
           ),
