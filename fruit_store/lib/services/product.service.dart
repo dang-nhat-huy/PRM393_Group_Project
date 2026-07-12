@@ -1,5 +1,5 @@
-
 import 'package:fruit_store/models/product.model.dart';
+import 'package:fruit_store/models/product_update_request.dart';
 
 import '../../../services/api.service.dart';
 
@@ -23,12 +23,9 @@ class ProductService {
       },
     );
 
-    final List items =
-        response["data"]?["items"] as List? ?? [];
+    final List items = response["data"]?["items"] as List? ?? [];
 
-    return items
-        .map((e) => Product.fromJson(e))
-        .toList();
+    return items.map((e) => Product.fromJson(e)).toList();
   }
 
   /// =========================
@@ -47,28 +44,25 @@ class ProductService {
       },
     );
 
-    final List items =
-        response["data"]?["items"] as List? ?? [];
+    final List items = response["data"]?["items"] as List? ?? [];
 
-    return items
-        .map((e) => Product.fromJson(e))
-        .toList();
+    return items.map((e) => Product.fromJson(e)).toList();
   }
 
   /// =========================
   /// Get Product By Id
   /// =========================
-  Future<Product?> getProductById(
-    int id,
-  ) async {
-    final response = await _api.get(
-      "/api/v1/products/product/$id",
-    );
+  Future<Product?> getProductById(int id) async {
+    final response = await _api.get("/api/v1/products/get-product/$id");
 
     if (response["data"] == null) {
       return null;
     }
 
     return Product.fromJson(response["data"]);
+  }
+
+  Future<void> updateProduct(int id, ProductUpdateRequest request) async {
+    await _api.put("/api/v1/products/update/$id", data: request.toJson());
   }
 }

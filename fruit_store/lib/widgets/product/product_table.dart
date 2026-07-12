@@ -18,15 +18,15 @@ class ProductTable extends StatelessWidget {
       children: [
         const ProductTableHeader(),
 
-        Expanded(
-          child: ListView.builder(
-            itemCount: products.length,
-            itemBuilder: (_, index) {
-              return ProductRow(
-                product: products[index],
-              );
-            },
-          ),
+        ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: products.length,
+          itemBuilder: (_, index) {
+            return ProductRow(
+              product: products[index],
+            );
+          },
         ),
       ],
     );
