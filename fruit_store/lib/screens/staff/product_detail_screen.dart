@@ -262,7 +262,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             product!.categoryName ?? "-",
           ),
 
-          _buildInfoRow(Icons.eco, "Crop", product!.cropName ?? "-"),
 
           _buildInfoRow(
             Icons.check_circle_outline,
