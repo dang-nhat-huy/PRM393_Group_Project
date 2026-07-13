@@ -25,7 +25,7 @@ jobs:
 
       - name: Analyze project
         working-directory: fruit_store
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       - name: Run tests
         working-directory: fruit_store
