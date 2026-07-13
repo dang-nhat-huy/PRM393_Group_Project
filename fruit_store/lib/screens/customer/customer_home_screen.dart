@@ -1,15 +1,16 @@
 // lib/screens/customer/customer_home_screen.dart
 import 'package:flutter/material.dart';
+
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/cart.service.dart';
-import '../../services/product.service.dart';
 import '../../services/order.service.dart';
+import '../../services/product.service.dart';
 import '../chatbot/chatbot_screen.dart';
-import 'shop_tab.dart';
 import 'cart_tab.dart';
 import 'orders_tab.dart';
 import 'profile_tab.dart';
+import 'shop_tab.dart';
 
 class CustomerHomeScreen extends StatefulWidget {
   final ApiService apiService;

@@ -1,9 +1,10 @@
 // lib/screens/customer/shop_tab.dart
 import 'package:flutter/material.dart';
+
 import '../../constants/app_theme.dart';
 import '../../models/store_product.model.dart';
-import '../../services/product.service.dart';
 import '../../services/cart.service.dart';
+import '../../services/product.service.dart';
 
 class ShopTab extends StatefulWidget {
   final ProductService productService;

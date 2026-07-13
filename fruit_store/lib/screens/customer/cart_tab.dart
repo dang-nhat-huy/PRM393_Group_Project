@@ -1,11 +1,12 @@
 // lib/screens/customer/cart_tab.dart
 import 'package:flutter/material.dart';
+
 import '../../constants/app_theme.dart';
 import '../../models/cart.model.dart';
 import '../../models/store_product.model.dart';
 import '../../services/cart.service.dart';
-import '../../services/product.service.dart';
 import '../../services/order.service.dart';
+import '../../services/product.service.dart';
 
 class CartTab extends StatefulWidget {
   final CartService cartService;
