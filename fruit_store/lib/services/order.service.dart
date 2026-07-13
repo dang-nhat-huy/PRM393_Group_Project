@@ -111,4 +111,18 @@ class OrderService {
   Future<void> updateCancelStatus(int orderId) async {
     await _api.put('/api/v1/Order/updateCancelStatus/$orderId');
   }
+
+  /// Create a new order.
+  Future<void> createOrder({
+    required List<Map<String, dynamic>> orderItems,
+    required String shippingAddress,
+  }) async {
+    await _api.post(
+      '/api/v1/Order/create',
+      data: {
+        'orderItems': orderItems,
+        'shippingAddress': shippingAddress,
+      },
+    );
+  }
 }

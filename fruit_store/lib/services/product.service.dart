@@ -1,8 +1,8 @@
+// lib/services/product.service.dart
 import 'package:fruit_store/models/category_model.dart';
 import 'package:fruit_store/models/product.model.dart';
 import 'package:fruit_store/models/product_update_request.dart';
-
-import '../../../services/api.service.dart';
+import 'api.service.dart';
 
 class ProductService {
   final ApiService _api;
@@ -26,7 +26,7 @@ class ProductService {
 
     final List items = response["data"]?["items"] as List? ?? [];
 
-    return items.map((e) => Product.fromJson(e)).toList();
+    return items.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// =========================
@@ -47,7 +47,7 @@ class ProductService {
 
     final List items = response["data"]?["items"] as List? ?? [];
 
-    return items.map((e) => Product.fromJson(e)).toList();
+    return items.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// =========================
@@ -60,7 +60,11 @@ class ProductService {
       return null;
     }
 
-    return Product.fromJson(response["data"]);
+    final productData = response["data"] as Map<String, dynamic>;
+    // Merge the productId into the response body since the detail API response does not contain it
+    productData['productId'] = id;
+
+    return Product.fromJson(productData);
   }
 
   /// =========================
@@ -71,13 +75,38 @@ class ProductService {
   }
 
   /// =========================
-  /// Get Categories By ID
+  /// Get Categories
   /// =========================
   Future<List<Category>> getCategories() async {
     final response = await _api.get("/api/v1/category/get-all");
 
     final List items = response["data"] as List;
 
-    return items.map((e) => Category.fromJson(e)).toList();
+    return items.map((e) => Category.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  /// Filter products by status, category, etc.
+  Future<List<Product>> filter({
+    int pageIndex = 1,
+    int pageSize = 20,
+    String? status,
+    int? categoryId,
+    bool? sortByStockAsc,
+  }) async {
+    final query = <String, dynamic>{
+      'pageIndex': pageIndex.toString(),
+      'pageSize': pageSize.toString(),
+    };
+    if (status != null) query['status'] = status;
+    if (categoryId != null) query['categoryId'] = categoryId.toString();
+    if (sortByStockAsc != null) query['sortByStockAsc'] = sortByStockAsc.toString();
+
+    final data = await _api.get('/api/v1/products/product-filter', query: query);
+    final responseData = data['data'];
+    if (responseData != null && responseData['items'] != null) {
+      final list = responseData['items'] as List<dynamic>;
+      return list.map((e) => Product.fromJson(e as Map<String, dynamic>)).toList();
+    }
+    return [];
   }
 }

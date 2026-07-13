@@ -1,9 +1,11 @@
+
 import 'package:flutter/material.dart';
 import 'package:fruit_store/screens/staff/staff_home_screen.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
 import '../admin/admin_home_screen.dart';
+import '../customer/customer_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -74,16 +76,17 @@ class _LoginScreenState extends State<LoginScreen> {
           );
           break;
 
-        // case "Customer":
-        //   Navigator.pushReplacement(
-        //     context,
-        //     MaterialPageRoute(
-        //       builder: (_) => CustomerHomeScreen(
-        //         apiService: _apiService,
-        //       ),
-        //     ),
-        //   );
-        //   break;
+        case "Customer":
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CustomerHomeScreen(
+                apiService: _apiService,
+                email: email,
+              ),
+            ),
+          );
+          break;
 
         default:
           setState(() {
