@@ -1,10 +1,12 @@
 enum OrderStatus {
-  pending(1, 'PENDING'),
-  active(2, 'ACTIVE'),
-  delivered(3, 'DELIVERED'),
+  unpaid(0, 'UNPAID'),
+  paid(1, 'PAID'),
+  undischarged(2, 'UNDISCHARGED'),
+  pending(3, 'PENDING'),
+  delivered(4, 'DELIVERED'),
   completed(5, 'COMPLETED'),
-  cancelled(4, 'CANCELLED'),
-  paid(6, 'PAID');
+  cancelled(6, 'CANCELLED');
+
 
   final int id;
   final String name;

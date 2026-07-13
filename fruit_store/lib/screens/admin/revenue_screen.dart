@@ -133,7 +133,7 @@ class _RevenueScreenState extends State<RevenueScreen> {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.active:
+      case OrderStatus.paid:
         return Colors.blue;
       case OrderStatus.delivered:
         return AppTheme.successGreen;

@@ -1,21 +1,47 @@
 import 'package:flutter/material.dart';
-import 'constants/app_theme.dart';
-import 'screens/login/login_screen.dart';
 
+import 'package:fruit_store/core/constants/app_colors.dart';
+import 'package:fruit_store/features/products/product_routes.dart';
+import 'package:fruit_store/features/welcome/presentation/screens/welcome_screen.dart';
+import 'package:fruit_store/screens/login/login_screen.dart';
 void main() {
-  runApp(const MyApp());
+  runApp(const FruitStoreApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class FruitStoreApp extends StatelessWidget {
+  const FruitStoreApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Fruit Farm',
+      title: 'Fruit Store',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.theme,
-      home: const LoginScreen(),
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: AppColors.background,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: AppColors.primaryOrange,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: AppColors.background,
+          foregroundColor: AppColors.textDark,
+          elevation: 0,
+        ),
+      ),
+      initialRoute: '/welcome',
+      routes: {
+        '/welcome': (context) => const WelcomeScreen(),
+
+        ...ProductRoutes.routes,
+
+        '/login': (context) => const LoginScreen(),
+
+        '/cart': (context) => const Scaffold(
+          body: Center(
+            child: Text('Cart Screen'),
+          ),
+        ),
+      },
     );
   }
 }

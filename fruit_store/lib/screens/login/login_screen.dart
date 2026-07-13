@@ -1,7 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-
+import 'package:fruit_store/screens/staff/staff_home_screen.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
@@ -47,21 +47,37 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final token = await _authService.login(email, password);
-      
-      // Decode JWT token to check user role
-      final parts = token.split('.');
-      String role = 'Customer'; // default fallback
-      if (parts.length >= 2) {
-        final payload = parts[1];
-        final normalized = base64Url.normalize(payload);
-        final decoded = utf8.decode(base64Url.decode(normalized));
-        final Map<String, dynamic> tokenData = jsonDecode(decoded);
-        role = tokenData['role'] as String? ?? 'Customer';
-      }
+      final auth = await _authService.login(
+        email,
+        password,
+      );
 
-      if (mounted) {
-        if (role.toLowerCase() == 'customer') {
+      if (!mounted) return;
+
+      switch (auth.role) {
+        case "Admin":
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminHomeScreen(
+                apiService: _apiService,
+              ),
+            ),
+          );
+          break;
+
+        case "Staff":
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StaffHomeScreen(
+                apiService: _apiService,
+              ),
+            ),
+          );
+          break;
+
+        case "Customer":
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -71,19 +87,23 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           );
-        } else {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AdminHomeScreen(apiService: _apiService),
-            ),
-          );
-        }
+          break;
+
+        default:
+          setState(() {
+            _error = "Role '${auth.role}' is not supported";
+          });
       }
     } catch (e) {
-      setState(() => _error = 'Login failed. Check your credentials.');
+      setState(() {
+        _error = 'Login failed. Check your credentials.';
+      });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 

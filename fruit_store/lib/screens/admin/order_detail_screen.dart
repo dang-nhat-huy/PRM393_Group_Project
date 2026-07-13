@@ -6,6 +6,7 @@ import '../../constants/order.constant.dart';
 import '../../models/order.model.dart';
 import '../../services/order.service.dart';
 import '../../widgets/status_badge.dart';
+import '../../widgets/order/order_action_card.dart';
 
 class OrderDetailScreen extends StatefulWidget {
   final Order order;
@@ -35,7 +36,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.active:
+      case OrderStatus.paid:
         return Colors.blue;
       case OrderStatus.delivered:
         return AppTheme.successGreen;
@@ -49,18 +50,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
   }
 
   String _formatCurrency(int amount) {
-    return '₫${amount.toString().replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (match) => '${match[1]},',
-        )}';
+    return '₫${amount.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (match) => '${match[1]},')}';
   }
 
   Future<void> _updateStatus(String action) async {
     final newStatus = action == 'deliver'
         ? OrderStatus.delivered
         : action == 'complete'
-            ? OrderStatus.completed
-            : OrderStatus.cancelled;
+        ? OrderStatus.completed
+        : OrderStatus.cancelled;
 
     final confirm = await showDialog<bool>(
       context: context,
@@ -147,40 +145,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
     final itemCount = items.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Order #${_order.orderId}'),
-        actions: [
-          if (status == OrderStatus.active)
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
-              onSelected: _updateStatus,
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'deliver',
-                  child: ListTile(
-                    leading: Icon(Icons.local_shipping, color: AppTheme.successGreen),
-                    title: Text('Mark Delivered'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-                const PopupMenuItem(
-                  value: 'cancel',
-                  child: ListTile(
-                    leading: Icon(Icons.cancel, color: AppTheme.errorRed),
-                    title: Text('Cancel Order'),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                ),
-              ],
-            ),
-          if (status == OrderStatus.delivered)
-            IconButton(
-              icon: const Icon(Icons.check_circle, color: AppTheme.successGreen),
-              onPressed: () => _updateStatus('complete'),
-              tooltip: 'Mark Completed',
-            ),
-        ],
-      ),
+      appBar: AppBar(title: Text('Order #${_order.orderId}')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -195,8 +160,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                         children: [
                           CircleAvatar(
                             radius: 40,
-                            backgroundColor:
-                                AppTheme.primaryOrange.withValues(alpha: 0.15),
+                            backgroundColor: AppTheme.primaryOrange.withValues(
+                              alpha: 0.15,
+                            ),
                             child: Text(
                               '#${_order.orderId}',
                               style: const TextStyle(
@@ -220,8 +186,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                             StatusBadge(
                               text: status.name.toUpperCase(),
                               color: _statusColor(status),
-                              background:
-                                  _statusColor(status).withValues(alpha: 0.1),
+                              background: _statusColor(
+                                status,
+                              ).withValues(alpha: 0.1),
                             ),
                         ],
                       ),
@@ -231,27 +198,30 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                   const SizedBox(height: 16),
 
                   // Customer Information
-                  _buildSection(
-                    'Customer Information',
-                    [
-                      _buildInfoRow('Name', customerName),
-                      _buildInfoRow('Email', email),
-                      _buildInfoRow('Address', address),
-                    ],
-                  ),
+                  _buildSection('Customer Information', [
+                    _buildInfoRow('Name', customerName),
+                    _buildInfoRow('Email', email),
+                    _buildInfoRow('Address', address),
+                  ]),
 
                   const SizedBox(height: 16),
 
                   // Order Information
-                  _buildSection(
-                    'Order Information',
-                    [
-                      _buildInfoRow('Order ID', _order.orderId.toString()),
-                      _buildInfoRow('Created At', _order.createdAt),
-                      if (_order.updatedAt != null)
-                        _buildInfoRow('Updated At', _order.updatedAt!),
-                      _buildInfoRow('Items', '$itemCount item(s)'),
-                    ],
+                  _buildSection('Order Information', [
+                    _buildInfoRow('Order ID', _order.orderId.toString()),
+                    _buildInfoRow('Created At', _order.createdAt),
+                    if (_order.updatedAt != null)
+                      _buildInfoRow('Updated At', _order.updatedAt!),
+                    _buildInfoRow('Items', '$itemCount item(s)'),
+                  ]),
+
+                  const SizedBox(height: 16),
+
+                  OrderActionCard(
+                    status: _order.status,
+                    onDeliver: () => _updateStatus('deliver'),
+                    onComplete: () => _updateStatus('complete'),
+                    onCancel: () => _updateStatus('cancel'),
                   ),
 
                   const SizedBox(height: 16),
@@ -282,12 +252,15 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                   width: 48,
                                   height: 48,
                                   decoration: BoxDecoration(
-                                    color: AppTheme.primaryOrange
-                                        .withValues(alpha: 0.1),
+                                    color: AppTheme.primaryOrange.withValues(
+                                      alpha: 0.1,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
-                                  child: const Icon(Icons.image,
-                                      color: AppTheme.primaryOrange),
+                                  child: const Icon(
+                                    Icons.image,
+                                    color: AppTheme.primaryOrange,
+                                  ),
                                 ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -297,7 +270,8 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                     Text(
                                       item.productName,
                                       style: const TextStyle(
-                                          fontWeight: FontWeight.w600),
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
@@ -311,7 +285,9 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
                                 ),
                               ),
                               Text(
-                                _formatCurrency(item.price * item.stockQuantity),
+                                _formatCurrency(
+                                  item.price * item.stockQuantity,
+                                ),
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   color: AppTheme.primaryOrange,
@@ -361,19 +337,13 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
-                color: AppTheme.textGray,
-                fontSize: 14,
-              ),
+              style: const TextStyle(color: AppTheme.textGray, fontSize: 14),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
             ),
           ),
         ],

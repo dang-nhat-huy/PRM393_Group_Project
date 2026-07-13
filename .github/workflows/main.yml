@@ -1,0 +1,42 @@
+name: Flutter CI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.41.9"
+          channel: stable
+
+      - name: Install dependencies
+        working-directory: fruit_store
+        run: flutter pub get
+
+      - name: Analyze project
+        working-directory: fruit_store
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        working-directory: fruit_store
+        run: flutter test
+
+      - name: Build APK
+        working-directory: fruit_store
+        run: flutter build apk --release
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: fruit-store-apk
+          path: fruit_store/build/app/outputs/flutter-apk/app-release.apk
