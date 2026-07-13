@@ -4,6 +4,8 @@ import 'package:fruit_store/core/constants/app_colors.dart';
 import 'package:fruit_store/features/products/product_routes.dart';
 import 'package:fruit_store/features/welcome/presentation/screens/welcome_screen.dart';
 import 'package:fruit_store/screens/login/login_screen.dart';
+import 'package:fruit_store/screens/register/register_screen.dart';
+
 void main() {
   runApp(const FruitStoreApp());
 }
@@ -35,6 +37,8 @@ class FruitStoreApp extends StatelessWidget {
         ...ProductRoutes.routes,
 
         '/login': (context) => const LoginScreen(),
+
+        '/register': (context) => const RegisterScreen(),
 
         '/cart': (context) => const Scaffold(
           body: Center(

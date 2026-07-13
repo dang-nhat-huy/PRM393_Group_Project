@@ -58,6 +58,32 @@ class AuthService {
     return token;
   }
 
+  /// Registers a new user and returns server message.
+  /// Use this for the new register screen because current API does not return token.
+  Future<String> registerAccount({
+    required String email,
+    required String password,
+    required String confirmPassword,
+  }) async {
+    final data = await _api.post(
+      '/api/v1/account/register',
+      data: {
+        'email': email.trim(),
+        'password': password,
+        'confirmPassword': confirmPassword,
+      },
+    );
+
+    final status = data['status'];
+    final message = data['message']?.toString() ?? 'Registration successful.';
+
+    if (status == 201 || status == 1) {
+      return message;
+    }
+
+    throw Exception(message);
+  }
+
   /// Clears the stored token (logs out).
   void logout() {
     _api.setToken(null);

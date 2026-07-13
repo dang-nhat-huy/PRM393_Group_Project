@@ -4,6 +4,7 @@ import 'package:fruit_store/core/constants/app_colors.dart';
 import 'package:fruit_store/features/products/data/models/product_model.dart';
 import 'package:fruit_store/features/products/data/services/product_service.dart';
 import 'package:fruit_store/features/products/presentation/widgets/product_card.dart';
+import 'package:fruit_store/services/app_session.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -79,6 +80,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
   }
 
   void _openSideMenu() {
+    final session = AppSession.instance;
+
     showGeneralDialog(
       context: context,
       barrierDismissible: true,
@@ -119,15 +122,18 @@ class _ProductListScreenState extends State<ProductListScreen> {
 
                       const SizedBox(height: 28),
 
-                      _buildSideMenuItem(
-                        icon: Icons.login,
-                        title: 'Login',
-                        subtitle: 'Đăng nhập tài khoản',
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.pushNamed(context, '/login');
-                        },
-                      ),
+                      if (session.isLoggedIn)
+                        _buildLoggedInMenuCard(session)
+                      else
+                        _buildSideMenuItem(
+                          icon: Icons.login,
+                          title: 'Login',
+                          subtitle: 'Đăng nhập tài khoản',
+                          onTap: () {
+                            Navigator.pop(context);
+                            Navigator.pushNamed(context, '/login');
+                          },
+                        ),
 
                       const SizedBox(height: 14),
 
@@ -149,6 +155,11 @@ class _ProductListScreenState extends State<ProductListScreen> {
                         icon: Icons.receipt_long_outlined,
                         title: 'Đơn hàng',
                       ),
+
+                      if (session.isLoggedIn) ...[
+                        const SizedBox(height: 14),
+                        _buildLogoutItem(),
+                      ],
 
                       const Spacer(),
 
@@ -199,6 +210,72 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
+  void _goToCart() {
+    Navigator.pushNamed(context, '/cart');
+  }
+
+  Widget _buildLoggedInMenuCard(AppSession session) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFF333333),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: Colors.white,
+            child: Text(
+              session.avatarLetter,
+              style: const TextStyle(
+                color: AppColors.primaryOrange,
+                fontSize: 20,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ),
+
+          const SizedBox(width: 16),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  session.displayName ?? 'Customer',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  session.role ?? 'Customer',
+                  style: const TextStyle(
+                    color: Colors.white54,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const Icon(
+            Icons.verified_user_outlined,
+            color: AppColors.primaryOrange,
+            size: 22,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSideMenuItem({
     required IconData icon,
     required String title,
@@ -223,8 +300,8 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 color: Colors.white,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
-                Icons.person,
+              child: Icon(
+                icon,
                 color: AppColors.primaryOrange,
                 size: 24,
               ),
@@ -310,8 +387,56 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _goToCart() {
-    Navigator.pushNamed(context, '/cart');
+  Widget _buildLogoutItem() {
+    return GestureDetector(
+      onTap: () {
+        AppSession.instance.clear();
+
+        Navigator.pop(context);
+
+        setState(() {});
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Đã đăng xuất'),
+            backgroundColor: AppColors.primaryOrange,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 1),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        );
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 17),
+        decoration: BoxDecoration(
+          color: const Color(0xFF303030),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: const Row(
+          children: [
+            Icon(
+              Icons.logout,
+              color: AppColors.primaryOrange,
+              size: 27,
+            ),
+            SizedBox(width: 18),
+            Expanded(
+              child: Text(
+                'Đăng xuất',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _addToCart(ProductModel product) {

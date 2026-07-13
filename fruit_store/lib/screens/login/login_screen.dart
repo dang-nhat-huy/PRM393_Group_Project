@@ -4,6 +4,8 @@ import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
 import '../admin/admin_home_screen.dart';
 import '../staff/staff_dashboard_screen.dart';
+import '../register/register_screen.dart';
+import '../../services/app_session.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -51,6 +53,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (!mounted) return;
 
+      AppSession.instance.setAuth(
+        token: auth.token,
+        role: auth.role,
+        accountId: auth.accountId,
+        email: email,
+      );
+
       switch (auth.role) {
         case "Admin":
           Navigator.pushReplacement(
@@ -60,6 +69,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 apiService: _apiService,
               ),
             ),
+          );
+          break;
+
+        case "Customer":
+          Navigator.pushNamedAndRemoveUntil(
+            context,
+            '/products',
+                (route) => false,
           );
           break;
 
@@ -221,6 +238,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
+                ),
+
+                const SizedBox(height: 18),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Text(
+                      "Don't have an account?",
+                      style: TextStyle(
+                        color: AppTheme.textGray,
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Register',
+                        style: TextStyle(
+                          color: AppTheme.primaryOrange,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
