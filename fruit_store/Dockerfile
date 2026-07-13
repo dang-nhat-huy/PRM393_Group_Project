@@ -6,5 +6,3 @@ COPY . .
 
 RUN flutter pub get
 RUN flutter build apk --release
-
-CMD ["bash"]
