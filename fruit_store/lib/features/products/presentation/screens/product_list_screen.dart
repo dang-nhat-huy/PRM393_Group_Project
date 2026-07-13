@@ -5,6 +5,7 @@ import 'package:fruit_store/features/products/data/models/product_model.dart';
 import 'package:fruit_store/features/products/data/services/product_service.dart';
 import 'package:fruit_store/features/products/presentation/widgets/product_card.dart';
 import 'package:fruit_store/services/app_session.dart';
+import 'package:fruit_store/features/cart/data/services/cart_service.dart';
 
 class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
@@ -16,6 +17,10 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final ProductService _productService = ProductService();
   final TextEditingController _searchController = TextEditingController();
+  final CartService _cartService = CartService();
+
+  int _basketCount = 0;
+  bool _isAddingToCart = false;
 
   late Future<List<ProductModel>> _productsFuture;
 
@@ -26,12 +31,41 @@ class _ProductListScreenState extends State<ProductListScreen> {
   void initState() {
     super.initState();
     _productsFuture = _loadProducts();
+    _loadBasketCount();
   }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadBasketCount() async {
+    if (!AppSession.instance.isLoggedIn) {
+      setState(() {
+        _basketCount = 0;
+      });
+      return;
+    }
+
+    try {
+      final items = await _cartService.getCartItems();
+
+      if (!mounted) return;
+
+      setState(() {
+        _basketCount = items.fold<int>(
+          0,
+              (total, item) => total + item.quantity,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _basketCount = 0;
+      });
+    }
   }
 
   Future<List<ProductModel>> _loadProducts() async {
@@ -210,8 +244,15 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _goToCart() {
-    Navigator.pushNamed(context, '/cart');
+  Future<void> _goToCart() async {
+    if (!AppSession.instance.isLoggedIn) {
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    await Navigator.pushNamed(context, '/cart');
+
+    await _loadBasketCount();
   }
 
   Widget _buildLoggedInMenuCard(AppSession session) {
@@ -439,15 +480,72 @@ class _ProductListScreenState extends State<ProductListScreen> {
     );
   }
 
-  void _addToCart(ProductModel product) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Đã thêm ${product.productName.trim()} vào giỏ hàng'),
-        backgroundColor: AppColors.primaryOrange,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
-      ),
-    );
+  Future<void> _addToCart(ProductModel product) async {
+    if (!AppSession.instance.isLoggedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng'),
+          backgroundColor: AppColors.primaryOrange,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+
+      Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    if (_isAddingToCart) return;
+
+    setState(() {
+      _isAddingToCart = true;
+    });
+
+    try {
+      await _cartService.addToCart(
+        productId: product.productId,
+        quantity: 1,
+      );
+
+      await _loadBasketCount();
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Đã thêm ${product.productName.trim()} vào giỏ hàng'),
+          backgroundColor: AppColors.primaryOrange,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 2),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddingToCart = false;
+        });
+      }
+    }
   }
 
   void _openFilter() {
@@ -555,18 +653,46 @@ class _ProductListScreenState extends State<ProductListScreen> {
                 onTap: _goToCart,
                 child: Column(
                   children: [
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFFFFF3E5),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.shopping_basket_outlined,
-                        color: AppColors.primaryOrange,
-                        size: 21,
-                      ),
+                    Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFFFF3E5),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.shopping_basket_outlined,
+                            color: AppColors.primaryOrange,
+                            size: 21,
+                          ),
+                        ),
+                        if (_basketCount > 0)
+                          Positioned(
+                            top: -4,
+                            right: -4,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.redAccent,
+                                borderRadius: BorderRadius.circular(100),
+                              ),
+                              child: Text(
+                                _basketCount > 99 ? '99+' : _basketCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 3),
                     const Text(

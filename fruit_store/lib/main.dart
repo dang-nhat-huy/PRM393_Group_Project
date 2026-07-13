@@ -5,6 +5,7 @@ import 'package:fruit_store/features/products/product_routes.dart';
 import 'package:fruit_store/features/welcome/presentation/screens/welcome_screen.dart';
 import 'package:fruit_store/screens/login/login_screen.dart';
 import 'package:fruit_store/screens/register/register_screen.dart';
+import 'package:fruit_store/features/cart/presentation/screens/cart_screen.dart';
 
 void main() {
   runApp(const FruitStoreApp());
@@ -40,11 +41,7 @@ class FruitStoreApp extends StatelessWidget {
 
         '/register': (context) => const RegisterScreen(),
 
-        '/cart': (context) => const Scaffold(
-          body: Center(
-            child: Text('Cart Screen'),
-          ),
-        ),
+        '/cart': (context) => const CartScreen(),
       },
     );
   }
