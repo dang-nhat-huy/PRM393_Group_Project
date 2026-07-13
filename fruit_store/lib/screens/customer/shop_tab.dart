@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_theme.dart';
-import '../../models/store_product.model.dart';
+import 'package:fruit_store/models/product.model.dart';
 import '../../services/cart.service.dart';
 import '../../services/product.service.dart';
 
@@ -22,8 +22,8 @@ class ShopTab extends StatefulWidget {
 
 class _ShopTabState extends State<ShopTab> {
   final TextEditingController _searchController = TextEditingController();
-  List<StoreProduct> _allProducts = [];
-  List<StoreProduct> _displayedProducts = [];
+  List<Product> _allProducts = [];
+  List<Product> _displayedProducts = [];
   bool _isLoading = false;
   String _selectedCategory = 'All';
   String? _error;
@@ -49,7 +49,7 @@ class _ShopTabState extends State<ShopTab> {
     });
 
     try {
-      final list = await widget.productService.getAll(pageSize: 50);
+      final list = await widget.productService.getProducts(pageSize: 50);
       setState(() {
         _allProducts = list;
         _filterAndSearch();
@@ -91,7 +91,7 @@ class _ShopTabState extends State<ShopTab> {
     });
   }
 
-  Future<void> _addToCart(StoreProduct product, int quantity) async {
+  Future<void> _addToCart(Product product, int quantity) async {
     try {
       await widget.cartService.addToCart(product.productId, quantity);
       if (mounted) {
@@ -116,7 +116,7 @@ class _ShopTabState extends State<ShopTab> {
     }
   }
 
-  void _showProductDetails(StoreProduct product) {
+  void _showProductDetails(Product product) {
     int orderQuantity = 1;
     showModalBottomSheet(
       context: context,
@@ -157,9 +157,9 @@ class _ShopTabState extends State<ShopTab> {
                           // Product Image
                           ClipRRect(
                             borderRadius: BorderRadius.circular(16),
-                            child: product.images != null && product.images!.isNotEmpty
+                            child: product.image != null && product.image!.isNotEmpty
                                 ? Image.network(
-                                    product.images!,
+                                    product.image!,
                                     width: double.infinity,
                                     height: 220,
                                     fit: BoxFit.cover,
@@ -482,9 +482,9 @@ class _ShopTabState extends State<ShopTab> {
                                             topLeft: Radius.circular(16),
                                             topRight: Radius.circular(16),
                                           ),
-                                          child: product.images != null && product.images!.isNotEmpty
+                                          child: product.image != null && product.image!.isNotEmpty
                                               ? Image.network(
-                                                  product.images!,
+                                                  product.image!,
                                                   width: double.infinity,
                                                   fit: BoxFit.cover,
                                                   errorBuilder: (_, __, ___) => _buildPlaceholderImage(120),

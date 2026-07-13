@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../constants/app_theme.dart';
 import '../../models/cart.model.dart';
-import '../../models/store_product.model.dart';
+import 'package:fruit_store/models/product.model.dart';
 import '../../services/cart.service.dart';
 import '../../services/order.service.dart';
 import '../../services/product.service.dart';
@@ -61,13 +61,12 @@ class _CartTabState extends State<CartTab> {
             item.product = prod;
           }).catchError((_) {
             // Fallback product info
-            item.product = StoreProduct(
+            item.product = Product(
               productId: item.productId,
               productName: 'Product #${item.productId}',
               price: item.priceQuantity / item.quantity,
               stockQuantity: 999,
               status: 'ACTIVE',
-              createdAt: '',
             );
           })
         );
@@ -358,9 +357,9 @@ class _CartTabState extends State<CartTab> {
                                         // Product Image
                                         ClipRRect(
                                           borderRadius: BorderRadius.circular(8),
-                                          child: product?.images != null && product!.images!.isNotEmpty
+                                          child: product?.image != null && product!.image!.isNotEmpty
                                               ? Image.network(
-                                                  product.images!,
+                                                  product.image!,
                                                   width: 70,
                                                   height: 70,
                                                   fit: BoxFit.cover,

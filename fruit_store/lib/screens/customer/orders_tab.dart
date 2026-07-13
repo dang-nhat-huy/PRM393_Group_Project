@@ -53,10 +53,12 @@ class _OrdersTabState extends State<OrdersTab> {
     switch (status) {
       case OrderStatus.pending:
         return Colors.orange;
-      case OrderStatus.active:
-        return Colors.blue;
+      case OrderStatus.unpaid:
+        return Colors.redAccent;
       case OrderStatus.paid:
         return Colors.purple;
+      case OrderStatus.undischarged:
+        return Colors.blue;
       case OrderStatus.delivered:
         return Colors.teal;
       case OrderStatus.completed:

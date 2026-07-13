@@ -1,5 +1,5 @@
 // lib/models/cart.model.dart
-import 'store_product.model.dart';
+import 'product.model.dart';
 
 class CartModel {
   final String paymentStatus;
@@ -39,7 +39,7 @@ class CartItemModel {
   final int productId;
   final int quantity;
   final double priceQuantity;
-  StoreProduct? product; // Resolved client-side for displaying details
+  Product? product; // Resolved client-side for displaying details
 
   CartItemModel({
     required this.cartId,
