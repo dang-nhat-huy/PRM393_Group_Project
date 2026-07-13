@@ -1,42 +1,37 @@
-name: Flutter CI
+name: Flutter Docker CI/CD
 
 on:
   push:
     branches:
-      - main
+      - nhathuy
+
+  pull_request:
+    branches:
+      - nhathuy
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: "3.41.9"
-          channel: stable
+      - name: Build Docker Image
+        run: docker build -t fruit-store-builder ./fruit_store
 
-      - name: Install dependencies
-        working-directory: fruit_store
-        run: flutter pub get
+      - name: Create Container
+        run: docker create --name fruit-store-container fruit-store-builder
 
-      - name: Analyze project
-        working-directory: fruit_store
-        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+      - name: Copy APK
+        run: |
+          docker cp fruit-store-container:/app/build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
 
-      - name: Run tests
-        working-directory: fruit_store
-        run: flutter test
-
-      - name: Build APK
-        working-directory: fruit_store
-        run: flutter build apk --release
+      - name: Remove Container
+        run: docker rm fruit-store-container
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: fruit-store-apk
-          path: fruit_store/build/app/outputs/flutter-apk/app-release.apk
+          path: app-release.apk
