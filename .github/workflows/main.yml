@@ -3,7 +3,11 @@ name: Flutter Docker CI/CD
 on:
   push:
     branches:
-      - main
+      - nhathuy
+
+  pull_request:
+    branches:
+      - nhathuy
 
 jobs:
   build-apk:
@@ -14,8 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Docker Image
-        run: docker build -t fruit-store-builder .
-        working-directory: fruit_store
+        run: docker build -t fruit-store-builder ./fruit_store
 
       - name: Create Container
         run: docker create --name fruit-store-container fruit-store-builder
