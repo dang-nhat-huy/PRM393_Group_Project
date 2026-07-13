@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
 import '../admin/admin_home_screen.dart';
+import '../customer/customer_home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,14 +45,38 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _authService.login(email, password);
+      final token = await _authService.login(email, password);
+      
+      // Decode JWT token to check user role
+      final parts = token.split('.');
+      String role = 'Customer'; // default fallback
+      if (parts.length >= 2) {
+        final payload = parts[1];
+        final normalized = base64Url.normalize(payload);
+        final decoded = utf8.decode(base64Url.decode(normalized));
+        final Map<String, dynamic> tokenData = jsonDecode(decoded);
+        role = tokenData['role'] as String? ?? 'Customer';
+      }
+
       if (mounted) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => AdminHomeScreen(apiService: _apiService),
-          ),
-        );
+        if (role.toLowerCase() == 'customer') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => CustomerHomeScreen(
+                apiService: _apiService,
+                email: email,
+              ),
+            ),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AdminHomeScreen(apiService: _apiService),
+            ),
+          );
+        }
       }
     } catch (e) {
       setState(() => _error = 'Login failed. Check your credentials.');
