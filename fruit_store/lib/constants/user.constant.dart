@@ -10,10 +10,9 @@ enum Gender {
 }
 
 enum UserRole {
+  customer(0, 'Customer'),
   admin(1, 'Admin'),
-  manager(2, 'Manager'),
-  customer(3, 'Customer'),
-  staff(4, 'Staff');
+  staff(3, 'Staff');
 
   final int id;
   final String name;
