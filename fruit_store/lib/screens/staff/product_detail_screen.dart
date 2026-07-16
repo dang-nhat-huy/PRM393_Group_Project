@@ -183,7 +183,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     width: 215,
                     height: 215,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.18),
+                      color: Colors.white.withValues(alpha: .18),
                       shape: BoxShape.circle,
                     ),
                     child: Padding(
@@ -192,7 +192,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         child: Image.network(
                           product!.image ?? "",
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
+                          errorBuilder: (_, _, _) => Container(
                             color: Colors.grey.shade200,
                             child: const Icon(Icons.image, size: 60),
                           ),

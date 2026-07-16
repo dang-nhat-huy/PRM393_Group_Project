@@ -121,7 +121,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     width: 215,
                     height: 215,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.18),
+                      color: Colors.white.withValues(alpha: 0.18),
                       shape: BoxShape.circle,
                     ),
                     child: Padding(

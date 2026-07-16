@@ -1,5 +1,6 @@
 // lib/screens/customer/cart_tab.dart
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/app_theme.dart';
 import '../../models/cart.model.dart';
@@ -158,6 +159,8 @@ class _CartTabState extends State<CartTab> {
 
   void _showCheckoutDialog() {
     _addressController.clear();
+    String selectedPayment = 'COD';
+
     showDialog(
       context: context,
       barrierDismissible: !_isCheckingOut,
@@ -166,24 +169,81 @@ class _CartTabState extends State<CartTab> {
           builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('Checkout Details'),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Please enter shipping address:',
-                    style: TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: _addressController,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      hintText: 'e.g. 123 Main Street, District 1, HCMC',
-                      labelText: 'Shipping Address',
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Please enter shipping address:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: _addressController,
+                      maxLines: 2,
+                      decoration: const InputDecoration(
+                        hintText: 'e.g. 123 Main Street, District 1, HCMC',
+                        labelText: 'Shipping Address',
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    const Text(
+                      'Payment Method:',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => setDialogState(() => selectedPayment = 'COD'),
+                            icon: Icon(
+                              Icons.money,
+                              color: selectedPayment == 'COD' ? AppTheme.primaryOrange : AppTheme.textGray,
+                            ),
+                            label: Text(
+                              'COD',
+                              style: TextStyle(
+                                color: selectedPayment == 'COD' ? AppTheme.primaryOrange : AppTheme.textGray,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: selectedPayment == 'COD' ? AppTheme.primaryOrange : Colors.grey.shade300,
+                                width: selectedPayment == 'COD' ? 2 : 1,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => setDialogState(() => selectedPayment = 'VNPAY'),
+                            icon: Icon(
+                              Icons.payment,
+                              color: selectedPayment == 'VNPAY' ? AppTheme.primaryOrange : AppTheme.textGray,
+                            ),
+                            label: Text(
+                              'VNPay',
+                              style: TextStyle(
+                                color: selectedPayment == 'VNPAY' ? AppTheme.primaryOrange : AppTheme.textGray,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(
+                                color: selectedPayment == 'VNPAY' ? AppTheme.primaryOrange : Colors.grey.shade300,
+                                width: selectedPayment == 'VNPAY' ? 2 : 1,
+                              ),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
               actions: [
                 TextButton(
@@ -216,30 +276,67 @@ class _CartTabState extends State<CartTab> {
                               };
                             }).toList();
 
-                            await widget.orderService.createOrder(
+                            final response = await widget.orderService.createOrder(
                               orderItems: orderItems,
                               shippingAddress: address,
                             );
+
+                            final data = response['data'];
+                            final orderId = (data != null && data is Map && data.containsKey('orderId'))
+                                ? (data['orderId'] as num).toInt()
+                                : (response.containsKey('orderId') ? (response['orderId'] as num).toInt() : null);
+
+                            final totalPrice = (data != null && data is Map && data.containsKey('totalPrice'))
+                                ? (data['totalPrice'] as num).toDouble()
+                                : (response.containsKey('totalPrice') ? (response['totalPrice'] as num).toDouble() : null);
 
                             // Clear cart on success
                             await widget.cartService.clearCart();
 
                             if (mounted) {
                               Navigator.pop(context);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Order placed successfully!'),
-                                  backgroundColor: AppTheme.successGreen,
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
+                              
+                              if (selectedPayment == 'VNPAY' && orderId != null) {
+                                final amount = totalPrice ?? _calculateTotal();
+                                final paymentUrl = await widget.orderService.createPaymentUrl(
+                                  orderId: orderId,
+                                  amount: amount,
+                                );
+
+                                if (paymentUrl.isNotEmpty) {
+                                  final uri = Uri.parse(paymentUrl);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                    
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Opening VNPay payment portal...'),
+                                        backgroundColor: AppTheme.successGreen,
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  } else {
+                                    throw Exception('Could not launch payment URL.');
+                                  }
+                                } else {
+                                  throw Exception('Payment URL is empty.');
+                                }
+                              } else {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Order placed successfully!'),
+                                    backgroundColor: AppTheme.successGreen,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                              }
                               _loadCart();
                             }
                           } catch (e) {
                             if (mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Failed to place order.'),
+                                SnackBar(
+                                  content: Text('Failed to complete checkout: ${e.toString()}'),
                                   backgroundColor: AppTheme.errorRed,
                                   behavior: SnackBarBehavior.floating,
                                 ),

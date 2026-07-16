@@ -1,5 +1,6 @@
 // lib/screens/customer/orders_tab.dart
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../constants/app_theme.dart';
 import '../../constants/order.constant.dart';
@@ -51,14 +52,14 @@ class _OrdersTabState extends State<OrdersTab> {
   Color _getStatusColor(OrderStatus? status) {
     if (status == null) return AppTheme.textGray;
     switch (status) {
-      case OrderStatus.pending:
-        return Colors.orange;
       case OrderStatus.unpaid:
         return Colors.redAccent;
       case OrderStatus.paid:
         return Colors.purple;
       case OrderStatus.undischarged:
         return Colors.blue;
+      case OrderStatus.pending:
+        return Colors.orange;
       case OrderStatus.delivered:
         return Colors.teal;
       case OrderStatus.completed:
@@ -96,106 +97,182 @@ class _OrdersTabState extends State<OrdersTab> {
             } else {
               final fullOrder = snapshot.data!;
               final items = fullOrder.orderDetails ?? [];
-              body = Container(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              bool isPaying = false;
+              body = StatefulBuilder(
+                builder: (context, setSheetState) {
+                  return Container(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Order #${fullOrder.orderId}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(fullOrder.status).withValues(alpha: 0.15),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            fullOrder.status?.name.toUpperCase() ?? 'PENDING',
-                            style: TextStyle(
-                              color: _getStatusColor(fullOrder.status),
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Order #${fullOrder.orderId}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                             ),
-                          ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: _getStatusColor(fullOrder.status).withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                fullOrder.status?.name.toUpperCase() ?? 'PENDING',
+                                style: TextStyle(
+                                  color: _getStatusColor(fullOrder.status),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Placed on: ${fullOrder.createdAt.split('T')[0]}',
-                      style: const TextStyle(color: AppTheme.textGray, fontSize: 13),
-                    ),
-                    const Divider(height: 32),
-                    
-                    // Shipping details
-                    const Text('Shipping Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 6),
-                    Text(
-                      fullOrder.shippingAddress ?? 'No shipping address provided.',
-                      style: const TextStyle(color: AppTheme.textDark, fontSize: 14),
-                    ),
-                    const Divider(height: 32),
+                        const SizedBox(height: 6),
+                        Text(
+                          'Placed on: ${fullOrder.createdAt.split('T')[0]}',
+                          style: const TextStyle(color: AppTheme.textGray, fontSize: 13),
+                        ),
+                        const Divider(height: 32),
+                        
+                        // Shipping details
+                        const Text('Shipping Information', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 6),
+                        Text(
+                          fullOrder.shippingAddress ?? 'No shipping address provided.',
+                          style: const TextStyle(color: AppTheme.textDark, fontSize: 14),
+                        ),
+                        const Divider(height: 32),
 
-                    // Items list
-                    const Text('Ordered Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                    const SizedBox(height: 10),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: items.length,
-                        itemBuilder: (context, idx) {
-                          final detail = items[idx];
-                          final prodName = detail.product?.productName ?? 'Product #${detail.productId}';
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 40,
-                                  height: 40,
-                                  decoration: BoxDecoration(
-                                    color: Colors.orange.shade50,
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: const Icon(Icons.shopping_basket_outlined, color: AppTheme.primaryOrange, size: 20),
+                        // Items list
+                        const Text('Ordered Items', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                        const SizedBox(height: 10),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: items.length,
+                            itemBuilder: (context, idx) {
+                              final detail = items[idx];
+                              final prodName = detail.product?.productName ?? 'Product #${detail.productId}';
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                child: Row(
+                                  children: [
+                                    Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: const Icon(Icons.shopping_basket_outlined, color: AppTheme.primaryOrange, size: 20),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(prodName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                          Text('Quantity: ${detail.quantity}', style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
+                                        ],
+                                      ),
+                                    ),
+                                    Text(
+                                      '${(detail.unitPrice * detail.quantity).toStringAsFixed(0)}đ',
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(prodName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                                      Text('Quantity: ${detail.quantity}', style: const TextStyle(color: AppTheme.textGray, fontSize: 12)),
-                                    ],
-                                  ),
-                                ),
-                                Text(
-                                  '${(detail.unitPrice * detail.quantity).toStringAsFixed(0)}đ',
-                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const Divider(height: 24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text('Total Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        Text(
-                          '${fullOrder.totalPrice.toStringAsFixed(0)}đ',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange, fontSize: 18),
+                              );
+                            },
+                          ),
                         ),
+                        const Divider(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text('Total Amount', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            Text(
+                              '${fullOrder.totalPrice.toStringAsFixed(0)}đ',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryOrange, fontSize: 18),
+                            ),
+                          ],
+                        ),
+                        if (fullOrder.status == OrderStatus.unpaid) ...[
+                          const SizedBox(height: 16),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: isPaying
+                                  ? null
+                                  : () async {
+                                      setSheetState(() => isPaying = true);
+                                      try {
+                                        final paymentUrl = await widget.orderService.createPaymentUrl(
+                                          orderId: fullOrder.orderId,
+                                          amount: fullOrder.totalPrice.toDouble(),
+                                        );
+
+                                        if (paymentUrl.isNotEmpty) {
+                                          final uri = Uri.parse(paymentUrl);
+                                          if (await canLaunchUrl(uri)) {
+                                            await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                            if (context.mounted) {
+                                              ScaffoldMessenger.of(context).showSnackBar(
+                                                const SnackBar(
+                                                  content: Text('Opening VNPay payment portal...'),
+                                                  backgroundColor: AppTheme.successGreen,
+                                                  behavior: SnackBarBehavior.floating,
+                                                ),
+                                              );
+                                              Navigator.pop(context);
+                                              _loadOrders();
+                                            }
+                                          } else {
+                                            throw Exception('Could not launch payment URL.');
+                                          }
+                                        } else {
+                                          throw Exception('Payment URL is empty.');
+                                        }
+                                      } catch (e) {
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(
+                                              content: Text('Failed to initiate payment: ${e.toString()}'),
+                                              backgroundColor: AppTheme.errorRed,
+                                              behavior: SnackBarBehavior.floating,
+                                            ),
+                                          );
+                                        }
+                                      } finally {
+                                        setSheetState(() => isPaying = false);
+                                      }
+                                    },
+                              icon: isPaying
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                    )
+                                  : const Icon(Icons.payment, color: Colors.white),
+                              label: Text(
+                                isPaying ? 'Processing...' : 'Pay with VNPay',
+                                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.primaryOrange,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                ),
+                  );
+                },
               );
             }
 

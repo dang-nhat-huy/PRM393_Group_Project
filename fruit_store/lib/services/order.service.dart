@@ -113,16 +113,37 @@ class OrderService {
   }
 
   /// Create a new order.
-  Future<void> createOrder({
+  Future<Map<String, dynamic>> createOrder({
     required List<Map<String, dynamic>> orderItems,
     required String shippingAddress,
   }) async {
-    await _api.post(
+    return await _api.post(
       '/api/v1/Order/create',
       data: {
         'orderItems': orderItems,
         'shippingAddress': shippingAddress,
       },
     );
+  }
+
+  /// Create a VNPay payment URL.
+  Future<String> createPaymentUrl({
+    required int orderId,
+    required double amount,
+    String orderType = 'billpayment',
+    String? orderDescription,
+    String name = 'Customer',
+  }) async {
+    final response = await _api.post(
+      '/api/vnpay/create-payment-url',
+      data: {
+        'orderId': orderId,
+        'orderType': orderType,
+        'amount': amount,
+        'orderDescription': orderDescription ?? 'Payment for order #$orderId',
+        'name': name,
+      },
+    );
+    return response['data'] as String? ?? '';
   }
 }

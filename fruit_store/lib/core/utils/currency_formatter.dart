@@ -7,7 +7,7 @@ class CurrencyFormatter {
           (match) => '${match[1]}.',
     );
 
-    return '${formatted}đ';
+    return '$formattedđ';
   }
 }
 

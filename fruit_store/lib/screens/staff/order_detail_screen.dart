@@ -164,7 +164,7 @@ class _OrderDetailScreenState extends State<OrderDetailScreen> {
           /// Products
           ...(order!.orderDetails ?? [])
               .map((item) => ProductCard(item: item))
-              .toList(),
+              ,
 
           const SizedBox(height: 12),
 

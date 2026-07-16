@@ -83,7 +83,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
       context: context,
       barrierDismissible: true,
       barrierLabel: 'Menu',
-      barrierColor: Colors.black.withOpacity(0.55),
+      barrierColor: Colors.black.withValues(alpha: 0.55),
       transitionDuration: const Duration(milliseconds: 260),
       pageBuilder: (context, animation, secondaryAnimation) {
         return Align(
