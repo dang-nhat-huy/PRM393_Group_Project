@@ -1,5 +1,6 @@
 // lib/services/api.service.dart
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 
 /// Central HTTP client for all API calls.
 ///
@@ -10,9 +11,7 @@ import 'package:dio/dio.dart';
 class ApiService {
   final Dio _dio;
 
-  static const String baseUrl = 'https://iotfarm.onrender.com/';
-
-  ApiService()
+  ApiService({String baseUrl = 'https://scaling-chainsaw.onrender.com'})
     : _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,
@@ -55,20 +54,37 @@ class ApiService {
       final response = await _dio.get(path, queryParameters: query);
       return _handleResponse(response);
     } on DioException catch (e) {
-      print("GET: $path");
-      print("STATUS: ${e.response?.statusCode}");
-      print("BODY: ${e.response?.data}");
+      debugPrint("GET Error: ${e.message}");
       rethrow;
     }
   }
 
   /// Sends a POST request to [path] with an optional [data] body.
-  Future<Map<String, dynamic>> post(
+  Future<dynamic> post(
     String path, {
     Map<String, dynamic>? data,
   }) async {
-    final response = await _dio.post(path, data: data);
-    return _handleResponse(response);
+    try {
+      final response = await _dio.post(path, data: data);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      debugPrint("POST Error: ${e.message}");
+      rethrow;
+    }
+  }
+
+  /// Sends a POST request that returns void (no response body needed).
+  /// Useful for endpoints that return empty or plain text responses on success.
+  Future<void> postNoResponse(
+    String path, {
+    Map<String, dynamic>? data,
+  }) async {
+    try {
+      await _dio.post(path, data: data);
+    } on DioException catch (e) {
+      debugPrint("POST Error: ${e.message}");
+      rethrow;
+    }
   }
 
   /// Sends a PUT request to [path] with an optional [data] body.
@@ -76,8 +92,13 @@ class ApiService {
     String path, {
     Map<String, dynamic>? data,
   }) async {
-    final response = await _dio.put(path, data: data);
-    return _handleResponse(response);
+    try {
+      final response = await _dio.put(path, data: data);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      debugPrint("PUT Error: ${e.message}");
+      rethrow;
+    }
   }
 
   /// Sends a PATCH request to [path] with an optional [data] body.
@@ -85,8 +106,13 @@ class ApiService {
     String path, {
     Map<String, dynamic>? data,
   }) async {
-    final response = await _dio.patch(path, data: data);
-    return _handleResponse(response);
+    try {
+      final response = await _dio.patch(path, data: data);
+      return _handleResponse(response);
+    } on DioException catch (e) {
+      debugPrint("PATCH Error: ${e.message}");
+      rethrow;
+    }
   }
 
   /// Sends a DELETE request to [path].
@@ -96,12 +122,16 @@ class ApiService {
 
   // --- Response handling ---
 
-  Map<String, dynamic> _handleResponse(Response<dynamic> response) {
+  dynamic _handleResponse(Response<dynamic> response) {
     final data = response.data;
     if (data is List) {
       return {'data': data};
     }
-    return data as Map<String, dynamic>;
+    if (data is Map) {
+      return data;
+    }
+    // Handle non-Map responses (e.g. plain text, empty body for 201 Created)
+    return {'data': data, 'statusCode': response.statusCode};
   }
 }
 

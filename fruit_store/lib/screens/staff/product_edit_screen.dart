@@ -126,8 +126,8 @@ class _ProductEditScreenState extends State<ProductEditScreen> {
         description: _descriptionController.text.trim(),
         categoryId: selectedCategory!.categoryId,
       );
-      print("Selected category: ${selectedCategory!.categoryId}");
-      print(request.toJson());
+      debugPrint("Selected category: ${selectedCategory!.categoryId}");
+      debugPrint(request.toJson().toString());
       await _productService.updateProduct(widget.productId, request);
 
       if (!mounted) return;

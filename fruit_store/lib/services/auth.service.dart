@@ -40,22 +40,29 @@ class AuthService {
   }
 
   /// Registers a new user with [email], [password], and [confirmPassword].
-  /// Returns the JWT token.
-  Future<String> register({
+  /// Returns the JWT token if one is returned, otherwise returns null.
+  Future<String?> register({
     required String email,
     required String password,
     required String confirmPassword,
   }) async {
-    final data = await _api.post('/api/v1/account/register', data: {
+    final response = await _api.post('/api/v1/account/register', data: {
       'email': email,
       'password': password,
       'confirmPassword': confirmPassword,
     });
 
-    final token = data['token'] as String;
-    _api.setToken(token);
+    // Handle different response formats
+    // Some backends return a token directly on registration
+    // Others return 201 with a success message and no token
+    if (response is Map && response.containsKey('token')) {
+      final token = response['token'] as String;
+      _api.setToken(token);
+      return token;
+    }
 
-    return token;
+    // No token returned, registration was successful without auto-login
+    return null;
   }
 
   /// Clears the stored token (logs out).

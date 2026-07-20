@@ -15,7 +15,7 @@ class CartService {
 
   /// Add a product to the cart.
   Future<void> addToCart(int productId, int quantity) async {
-    await _api.post('/api/v1/account/add-to-cart?productId=$productId&quantity=$quantity');
+    await _api.postNoResponse('/api/v1/account/add-to-cart?productId=$productId&quantity=$quantity');
   }
 
   /// Update the quantity of a product in the cart.

@@ -6,7 +6,6 @@ import '../../services/api.service.dart';
 import '../../services/cart.service.dart';
 import '../../services/order.service.dart';
 import '../../services/product.service.dart';
-import '../chatbot/chatbot_screen.dart';
 import 'cart_tab.dart';
 import 'orders_tab.dart';
 import 'profile_tab.dart';
@@ -31,6 +30,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
   late final ProductService _productService;
   late final CartService _cartService;
   late final OrderService _orderService;
+  late final ApiService _accountApiService;
 
   @override
   void initState() {
@@ -38,6 +38,10 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     _productService = ProductService(widget.apiService);
     _cartService = CartService(widget.apiService);
     _orderService = OrderService(widget.apiService);
+
+    _accountApiService = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
+    // Sync the JWT token from the main API service
+    _accountApiService.setToken(widget.apiService.accessToken);
   }
 
   void _onTabChanged(int index) {
@@ -48,16 +52,33 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Pass a unique key based on _currentIndex so each tab can detect
+    // when it becomes active and reload its data.
     final tabs = [
-      ShopTab(productService: _productService, cartService: _cartService),
+      ShopTab(
+        key: ValueKey('shop-$_currentIndex'),
+        productService: _productService,
+        cartService: _cartService,
+        isActive: _currentIndex == 0,
+      ),
       CartTab(
+        key: ValueKey('cart-$_currentIndex'),
         cartService: _cartService,
         productService: _productService,
         orderService: _orderService,
+        isActive: _currentIndex == 1,
       ),
-      OrdersTab(orderService: _orderService),
-      const ChatbotScreen(),
-      ProfileTab(email: widget.email, apiService: widget.apiService),
+      OrdersTab(
+        key: ValueKey('orders-$_currentIndex'),
+        orderService: _orderService,
+        isActive: _currentIndex == 2,
+      ),
+      ProfileTab(
+        key: ValueKey('profile-$_currentIndex'),
+        email: widget.email,
+        apiService: _accountApiService,
+        isActive: _currentIndex == 3,
+      ),
     ];
 
     return Scaffold(
@@ -88,11 +109,6 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
             icon: Icon(Icons.receipt_long_outlined),
             activeIcon: Icon(Icons.receipt_long),
             label: 'Orders',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person_outline),
