@@ -9,11 +9,13 @@ import '../../services/product.service.dart';
 class ShopTab extends StatefulWidget {
   final ProductService productService;
   final CartService cartService;
+  final bool isActive;
 
   const ShopTab({
     super.key,
     required this.productService,
     required this.cartService,
+    this.isActive = true,
   });
 
   @override
@@ -163,7 +165,7 @@ class _ShopTabState extends State<ShopTab> {
                                     width: double.infinity,
                                     height: 220,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (_, __, ___) => _buildPlaceholderImage(220),
+                                    errorBuilder: (_, _, _) => _buildPlaceholderImage(220),
                                   )
                                 : _buildPlaceholderImage(220),
                           ),
@@ -338,15 +340,6 @@ class _ShopTabState extends State<ShopTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Organic Store'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _loadProducts,
-          )
-        ],
-      ),
       body: Column(
         children: [
           // Banner & Welcome
@@ -362,13 +355,30 @@ class _ShopTabState extends State<ShopTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Healthy Organic Fruits!',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.white,
-                  ),
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Healthy Organic Fruits!',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.white,
+                        ),
+                      ),
+                    ),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: AppTheme.white.withValues(alpha: 0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.refresh, color: AppTheme.white),
+                        onPressed: _loadProducts,
+                        tooltip: 'Refresh products',
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -487,7 +497,7 @@ class _ShopTabState extends State<ShopTab> {
                                                   product.image!,
                                                   width: double.infinity,
                                                   fit: BoxFit.cover,
-                                                  errorBuilder: (_, __, ___) => _buildPlaceholderImage(120),
+                                                  errorBuilder: (_, _, _) => _buildPlaceholderImage(120),
                                                 )
                                               : _buildPlaceholderImage(120),
                                         ),

@@ -2,19 +2,21 @@
 import 'package:flutter/material.dart';
 
 import '../../constants/app_theme.dart';
-import '../../models/user.model.dart';
 import '../../services/api.service.dart';
 import '../../services/user.service.dart';
 import '../login/login_screen.dart';
+import 'profile_edit_screen.dart';
 
 class ProfileTab extends StatefulWidget {
   final String email;
   final ApiService apiService;
+  final bool isActive;
 
   const ProfileTab({
     super.key,
     required this.email,
     required this.apiService,
+    this.isActive = true,
   });
 
   @override
@@ -23,7 +25,7 @@ class ProfileTab extends StatefulWidget {
 
 class _ProfileTabState extends State<ProfileTab> {
   late final UserService _userService;
-  User? _user;
+  Map<String, dynamic>? _profileData;
   bool _isLoading = false;
   String? _error;
 
@@ -34,6 +36,15 @@ class _ProfileTabState extends State<ProfileTab> {
     _loadProfile();
   }
 
+  @override
+  void didUpdateWidget(covariant ProfileTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadProfile();
+    }
+  }
+
+
   Future<void> _loadProfile() async {
     setState(() {
       _isLoading = true;
@@ -41,9 +52,9 @@ class _ProfileTabState extends State<ProfileTab> {
     });
 
     try {
-      final userProfile = await _userService.getByEmail(widget.email);
+      final profileData = await _userService.getProfile();
       setState(() {
-        _user = userProfile;
+        _profileData = profileData;
       });
     } catch (e) {
       setState(() {
@@ -66,18 +77,61 @@ class _ProfileTabState extends State<ProfileTab> {
     );
   }
 
+  Future<void> _navigateToEdit() async {
+    if (_profileData == null) return;
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProfileEditScreen(
+          profileData: _profileData!,
+          userService: _userService,
+        ),
+      ),
+    );
+    if (result == true && mounted) {
+      _loadProfile();
+    }
+  }
+
+  String _getGenderDisplay(String? gender) {
+    if (gender == null || gender.isEmpty) return 'Not specified';
+    // Map numeric values to display text
+    switch (gender) {
+      case '0':
+        return 'Male';
+      case '1':
+        return 'Female';
+      case '2':
+        return 'Other';
+      default:
+        return gender;
+    }
+  }
+
+  String _getRoleDisplay(String? role) {
+    if (role == null || role.isEmpty) return 'CUSTOMER';
+    return role.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final profile = _user?.accountProfile;
-    final fullName = profile?.fullName ?? 'Valued Customer';
-    final phone = profile?.phone ?? 'Not provided';
-    final address = profile?.address ?? 'Not provided';
-    final gender = profile?.gender?.name ?? 'Not specified';
+    final fullName = _profileData?['fullname'] as String? ?? 'Valued Customer';
+    final phone = _profileData?['phone'] as String? ?? 'Not provided';
+    final address = _profileData?['address'] as String? ?? 'Not provided';
+    final gender = _getGenderDisplay(_profileData?['gender'] as String?);
+    final role = _getRoleDisplay(_profileData?['role'] as String?);
+    final email = _profileData?['email'] as String? ?? widget.email;
+    final createdAt = _profileData?['createdAt'] as String? ?? '';
+    final updatedAt = _profileData?['updatedAt'] as String?;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Profile'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _navigateToEdit,
+          ),
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadProfile,
@@ -120,7 +174,7 @@ class _ProfileTabState extends State<ProfileTab> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(
-                                _user?.role.name.toUpperCase() ?? 'CUSTOMER',
+                                role,
                                 style: const TextStyle(
                                   color: AppTheme.primaryOrange,
                                   fontWeight: FontWeight.bold,
@@ -132,7 +186,7 @@ class _ProfileTabState extends State<ProfileTab> {
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
+
                       // Details Cards
                       Card(
                         margin: EdgeInsets.zero,
@@ -140,19 +194,25 @@ class _ProfileTabState extends State<ProfileTab> {
                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                           child: Column(
                             children: [
-                              _buildProfileRow(Icons.email_outlined, 'Email', widget.email),
+                              _buildProfileRow(Icons.email_outlined, 'Email', email),
                               const Divider(height: 1),
                               _buildProfileRow(Icons.phone_outlined, 'Phone', phone),
                               const Divider(height: 1),
                               _buildProfileRow(Icons.location_on_outlined, 'Address', address),
                               const Divider(height: 1),
                               _buildProfileRow(Icons.wc_outlined, 'Gender', gender),
+                              const Divider(height: 1),
+                              _buildProfileRow(Icons.calendar_today_outlined, 'Member Since', createdAt),
+                              if (updatedAt != null && updatedAt.isNotEmpty) ...[
+                                const Divider(height: 1),
+                                _buildProfileRow(Icons.update_outlined, 'Last Updated', updatedAt),
+                              ],
                             ],
                           ),
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Log out card
                       SizedBox(
                         width: double.infinity,

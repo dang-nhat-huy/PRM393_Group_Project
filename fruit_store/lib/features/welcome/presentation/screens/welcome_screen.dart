@@ -5,8 +5,8 @@ import 'package:fruit_store/core/constants/app_colors.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
-  void _goToProducts(BuildContext context) {
-    Navigator.pushReplacementNamed(context, '/products');
+  void _goToLogin(BuildContext context) {
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -132,7 +132,7 @@ class WelcomeScreen extends StatelessWidget {
               width: double.infinity,
               height: 58,
               child: ElevatedButton(
-                onPressed: () => _goToProducts(context),
+                onPressed: () => _goToLogin(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryOrange,
                   foregroundColor: Colors.white,

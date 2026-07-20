@@ -9,8 +9,9 @@ import '../../services/order.service.dart';
 
 class OrdersTab extends StatefulWidget {
   final OrderService orderService;
+  final bool isActive;
 
-  const OrdersTab({super.key, required this.orderService});
+  const OrdersTab({super.key, required this.orderService, this.isActive = true});
 
   @override
   State<OrdersTab> createState() => _OrdersTabState();
@@ -27,6 +28,14 @@ class _OrdersTabState extends State<OrdersTab> {
     _loadOrders();
   }
 
+  @override
+  void didUpdateWidget(covariant OrdersTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadOrders();
+    }
+  }
+
   Future<void> _loadOrders() async {
     setState(() {
       _isLoading = true;
@@ -39,9 +48,17 @@ class _OrdersTabState extends State<OrdersTab> {
         _orders = response.items;
       });
     } catch (e) {
-      setState(() {
-        _error = 'Failed to load order history.';
-      });
+      final message = e.toString().toLowerCase();
+      final isNotFound = message.contains('400') || message.contains('not found') || message.contains('no orders');
+      if (isNotFound) {
+        setState(() {
+          _orders = [];
+        });
+      } else {
+        setState(() {
+          _error = 'Failed to load order history.';
+        });
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -66,6 +83,70 @@ class _OrdersTabState extends State<OrdersTab> {
         return AppTheme.successGreen;
       case OrderStatus.cancelled:
         return AppTheme.errorRed;
+    }
+  }
+
+  void _showPaymentVerificationDialog(int orderId) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final verified = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('Verify Payment'),
+        content: const Text(
+          'Have you completed the payment on the VNPay portal?\n\n'
+          'Tap "Verify" to check payment status, or "Later" to verify from the Orders tab.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryOrange,
+            ),
+            child: const Text('Verify'),
+          ),
+        ],
+      ),
+    );
+
+    if (verified == true && mounted) {
+      try {
+        final status = await widget.orderService.checkPaymentStatus(orderId);
+        final isPaid = status['data'] is Map
+            ? (status['data'] as Map)['paymentStatus'] == 'PAID'
+            : false;
+
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text(
+                isPaid
+                    ? 'Payment verified! Order #$orderId has been paid.'
+                    : 'Payment not yet confirmed. Please check the Orders tab.',
+              ),
+              backgroundColor: isPaid
+                  ? AppTheme.successGreen
+                  : AppTheme.errorRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          _loadOrders();
+        }
+      } catch (e) {
+        if (mounted) {
+          messenger.showSnackBar(
+            SnackBar(
+              content: Text('Failed to verify payment: ${e.toString()}'),
+              backgroundColor: AppTheme.errorRed,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -209,10 +290,7 @@ class _OrdersTabState extends State<OrdersTab> {
                                   : () async {
                                       setSheetState(() => isPaying = true);
                                       try {
-                                        final paymentUrl = await widget.orderService.createPaymentUrl(
-                                          orderId: fullOrder.orderId,
-                                          amount: fullOrder.totalPrice.toDouble(),
-                                        );
+                                        final paymentUrl = await widget.orderService.createOrderPayment(fullOrder.orderId);
 
                                         if (paymentUrl.isNotEmpty) {
                                           final uri = Uri.parse(paymentUrl);
@@ -226,8 +304,12 @@ class _OrdersTabState extends State<OrdersTab> {
                                                   behavior: SnackBarBehavior.floating,
                                                 ),
                                               );
-                                              Navigator.pop(context);
-                                              _loadOrders();
+
+                                              // After returning from VNPay, ask user to verify payment
+                                              await Future.delayed(const Duration(seconds: 1));
+                                              if (context.mounted) {
+                                                _showPaymentVerificationDialog(fullOrder.orderId);
+                                              }
                                             }
                                           } else {
                                             throw Exception('Could not launch payment URL.');
@@ -320,7 +402,7 @@ class _OrdersTabState extends State<OrdersTab> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.receipt_long_outlined, size: 80, color: Colors.grey.shade300),
+                          Icon(Icons.list_alt_outlined, size: 80, color: Colors.grey.shade300),
                           const SizedBox(height: 16),
                           const Text(
                             'No orders yet',
@@ -331,75 +413,86 @@ class _OrdersTabState extends State<OrdersTab> {
                         ],
                       ),
                     )
-                  : ListView.builder(
-                      itemCount: _orders.length,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      itemBuilder: (context, index) {
-                        final order = _orders[index];
-                        final dateStr = order.createdAt.split('T')[0];
-                        return Card(
-                          child: InkWell(
-                            onTap: () => _showOrderDetail(order),
-                            borderRadius: BorderRadius.circular(12),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text(
-                                        'Order #${order.orderId}',
-                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                                      ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                        decoration: BoxDecoration(
-                                          color: _getStatusColor(order.status).withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          order.status?.name.toUpperCase() ?? 'PENDING',
-                                          style: TextStyle(
-                                            color: _getStatusColor(order.status),
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 11,
+                  : RefreshIndicator(
+                      onRefresh: _loadOrders,
+                      color: AppTheme.primaryOrange,
+                      child: Column(
+                        children: [
+                          Expanded(
+                            child: ListView.builder(
+                              itemCount: _orders.length,
+                              padding: const EdgeInsets.symmetric(vertical: 12),
+                              physics: const AlwaysScrollableScrollPhysics(),
+                              itemBuilder: (context, index) {
+                                final order = _orders[index];
+                                final dateStr = order.createdAt.split('T')[0];
+                                return Card(
+                                  child: InkWell(
+                                    onTap: () => _showOrderDetail(order),
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text(
+                                                'Order #${order.orderId}',
+                                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                              ),
+                                              Container(
+                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                                decoration: BoxDecoration(
+                                                  color: _getStatusColor(order.status).withValues(alpha: 0.15),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Text(
+                                                  order.status?.name.toUpperCase() ?? 'PENDING',
+                                                  style: TextStyle(
+                                                    color: _getStatusColor(order.status),
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 11,
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                        ),
+                                          const SizedBox(height: 8),
+                                          Row(
+                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Text('Date: $dateStr', style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
+                                              Text(
+                                                'Total: ${order.totalPrice.toStringAsFixed(0)}đ',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.bold,
+                                                  color: AppTheme.primaryOrange,
+                                                  fontSize: 15,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (order.shippingAddress != null) ...[
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Ship to: ${order.shippingAddress}',
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: const TextStyle(color: AppTheme.textGray, fontSize: 12),
+                                            ),
+                                          ],
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Text('Date: $dateStr', style: const TextStyle(color: AppTheme.textGray, fontSize: 13)),
-                                      Text(
-                                        'Total: ${order.totalPrice.toStringAsFixed(0)}đ',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppTheme.primaryOrange,
-                                          fontSize: 15,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  if (order.shippingAddress != null) ...[
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Ship to: ${order.shippingAddress}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: const TextStyle(color: AppTheme.textGray, fontSize: 12),
                                     ),
-                                  ],
-                                ],
-                              ),
+                                  ),
+                                );
+                              },
                             ),
                           ),
-                        );
-                      },
+                        ],
+                      ),
                     ),
     );
   }

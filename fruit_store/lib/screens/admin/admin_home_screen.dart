@@ -5,7 +5,7 @@ import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/order.service.dart';
 import '../../services/user.service.dart';
-import '../chatbot/chatbot_screen.dart';
+import '../login/login_screen.dart';
 import 'account_list.dart';
 import 'revenue_screen.dart';
 
@@ -27,8 +27,20 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   @override
   void initState() {
     super.initState();
-    _userService = UserService(widget.apiService);
+    final accountApi = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
+    // Sync token from the main API service that has the JWT
+    accountApi.setToken(widget.apiService.accessToken);
+    _userService = UserService(accountApi);
     _orderService = OrderService(widget.apiService);
+  }
+
+  void _signOut() {
+    widget.apiService.setToken(null);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   @override
@@ -36,7 +48,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     final screens = [
       AccountListScreen(userService: _userService),
       RevenueScreen(orderService: _orderService),
-      const ChatbotScreen(),
     ];
 
     return Scaffold(
@@ -61,10 +72,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             activeIcon: Icon(Icons.receipt_long),
             label: 'Revenue',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.chat_bubble_outline),
-            activeIcon: Icon(Icons.chat_bubble),
-            label: 'Chat',
+        ],
+      ),
+      appBar: AppBar(
+        title: const Text('Admin Dashboard'),
+        backgroundColor: AppTheme.primaryOrange,
+        foregroundColor: AppTheme.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: _signOut,
           ),
         ],
       ),

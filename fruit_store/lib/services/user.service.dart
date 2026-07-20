@@ -15,6 +15,16 @@ class UserService {
     return User.fromJson(data);
   }
 
+  /// Get profile for the currently logged-in user (customer endpoint).
+  Future<Map<String, dynamic>> getProfile() async {
+    return await _api.get('/api/v1/account-profile/profile');
+  }
+
+  /// Update profile for the currently logged-in user.
+  Future<Map<String, dynamic>> updateProfile(Map<String, dynamic> data) async {
+    return await _api.put('/api/v1/account-profile/update', data: data);
+  }
+
   Future<List<User>> getAvailableStaff() async {
     final data = await _api.get('/api/v1/account/available-staff');
     final items = data['data'] as List<dynamic>;

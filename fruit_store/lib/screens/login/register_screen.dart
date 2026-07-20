@@ -1,43 +1,49 @@
+// lib/screens/login/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:fruit_store/screens/staff/staff_home_screen.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
-import '../admin/admin_home_screen.dart';
-import '../customer/customer_home_screen.dart';
-import 'register_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _authApiService = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
-  final _mainApiService = ApiService();
   late final _authService = AuthService(_authApiService);
 
   bool _isLoading = false;
   String? _error;
   bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _login() async {
+  Future<void> _register() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'Please enter email and password');
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      setState(() => _error = 'Please fill in all fields');
+      return;
+    }
+
+    if (password != confirmPassword) {
+      setState(() => _error = 'Passwords do not match');
       return;
     }
 
@@ -47,59 +53,31 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final auth = await _authService.login(
-        email,
-        password,
+      await _authService.register(
+        email: email,
+        password: password,
+        confirmPassword: confirmPassword,
       );
-
-      // Sync the JWT token to the main API service (port 5002)
-      _mainApiService.setToken(auth.token);
 
       if (!mounted) return;
 
-      switch (auth.role) {
-        case "Admin":
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => AdminHomeScreen(
-                apiService: _mainApiService,
-              ),
-            ),
-          );
-          break;
+      // Navigate back to login on success
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => const LoginScreen(),
+        ),
+      );
 
-        case "Staff":
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => StaffHomeScreen(
-                apiService: _mainApiService,
-              ),
-            ),
-          );
-          break;
-
-        case "Customer":
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => CustomerHomeScreen(
-                apiService: _mainApiService,
-                email: email,
-              ),
-            ),
-          );
-          break;
-
-        default:
-          setState(() {
-            _error = "Role '${auth.role}' is not supported";
-          });
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration successful! Please login.'),
+          backgroundColor: AppTheme.primaryOrange,
+        ),
+      );
     } catch (e) {
       setState(() {
-        _error = 'Login failed. Check your credentials.';
+        _error = 'Registration failed. Please try again.';
       });
     } finally {
       if (mounted) {
@@ -113,6 +91,11 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text('Register'),
+        backgroundColor: AppTheme.primaryOrange,
+        foregroundColor: AppTheme.white,
+      ),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -136,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 24),
                 const Text(
-                  'Fruit Farm',
+                  'Create Account',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -145,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Sign in to continue',
+                  'Sign up to get started',
                   style: TextStyle(color: AppTheme.textGray),
                 ),
                 const SizedBox(height: 40),
@@ -203,17 +186,38 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                   ),
+                  textInputAction: TextInputAction.next,
+                ),
+                const SizedBox(height: 16),
+
+                // Confirm Password
+                TextField(
+                  controller: _confirmPasswordController,
+                  obscureText: _obscureConfirmPassword,
+                  decoration: InputDecoration(
+                    labelText: 'Confirm Password',
+                    prefixIcon: const Icon(Icons.lock_outlined),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscureConfirmPassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
+                      ),
+                      onPressed: () => setState(
+                          () => _obscureConfirmPassword = !_obscureConfirmPassword),
+                    ),
+                  ),
                   textInputAction: TextInputAction.done,
-                  onSubmitted: (_) => _login(),
+                  onSubmitted: (_) => _register(),
                 ),
                 const SizedBox(height: 24),
 
-                // Sign In button
+                // Register button
                 SizedBox(
                   width: double.infinity,
                   height: 50,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading ? null : _register,
                     child: _isLoading
                         ? const SizedBox(
                             width: 24,
@@ -224,23 +228,23 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                           )
                         : const Text(
-                            'Sign In',
+                            'Register',
                             style: TextStyle(fontSize: 16),
                           ),
                   ),
                 ),
                 const SizedBox(height: 16),
 
-                // Register link
+                // Back to Login
                 TextButton(
-                  onPressed: () => Navigator.push(
+                  onPressed: () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => const RegisterScreen(),
+                      builder: (_) => const LoginScreen(),
                     ),
                   ),
                   child: const Text(
-                    "Don't have an account? Register",
+                    'Already have an account? Sign In',
                     style: TextStyle(color: AppTheme.primaryOrange),
                   ),
                 ),

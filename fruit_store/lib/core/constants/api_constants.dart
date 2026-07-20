@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://iotfarm.onrender.com/api/v1';
+  static const String baseUrl = 'http://10.0.2.2:5002/api/v1';
 
   static String productsList({
     int pageIndex = 1,

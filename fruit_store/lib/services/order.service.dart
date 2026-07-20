@@ -126,24 +126,35 @@ class OrderService {
     );
   }
 
-  /// Create a VNPay payment URL.
-  Future<String> createPaymentUrl({
-    required int orderId,
-    required double amount,
-    String orderType = 'billpayment',
-    String? orderDescription,
-    String name = 'Customer',
-  }) async {
+  /// Generate a VNPay payment URL for an existing order.
+  ///
+  /// [orderId] is the ID of the order to pay for.
+  /// [returnUrl] is an optional custom return URL (deep link) that VNPay
+  /// will redirect to after payment completion. Use a custom scheme like
+  /// `fruitstore://payment-callback?orderId=X` for mobile deep linking.
+  Future<String> createOrderPayment(int orderId, {String? returnUrl}) async {
+    final Map<String, dynamic>? dataPayload;
+    if (returnUrl != null) {
+      dataPayload = {'returnUrl': returnUrl};
+    } else {
+      dataPayload = null;
+    }
+
     final response = await _api.post(
-      '/api/vnpay/create-payment-url',
-      data: {
-        'orderId': orderId,
-        'orderType': orderType,
-        'amount': amount,
-        'orderDescription': orderDescription ?? 'Payment for order #$orderId',
-        'name': name,
-      },
+      '/api/v1/Order/createOrderPayment/$orderId',
+      data: dataPayload,
     );
-    return response['data'] as String? ?? '';
+
+    // The response may contain the URL in 'data' or directly as a string
+    final data = response['data'];
+    if (data is String) return data;
+    if (data is Map && data.containsKey('paymentUrl')) return data['paymentUrl'] as String;
+    return data.toString();
+  }
+
+  /// Check payment status for an order.
+  Future<Map<String, dynamic>> checkPaymentStatus(int orderId) async {
+    final response = await _api.get('/api/vnpay/PaymentByOrderId/$orderId');
+    return response;
   }
 }
