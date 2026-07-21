@@ -73,7 +73,7 @@ class UserService {
     String newPassword,
     String confirmPassword,
   ) async {
-    await _api.patch(
+    await _api.put(
       '/api/v1/account/update-password',
       data: {
         'oldPassword': oldPassword,
@@ -84,11 +84,11 @@ class UserService {
   }
 
   Future<void> updateStatus(int id) async {
-    await _api.patch('/api/v1/account/update-status/$id');
+    await _api.put('/api/v1/account/update-status/$id');
   }
 
   Future<void> updateRole(int id, String roleId) async {
-    await _api.patch(
+    await _api.put(
       '/api/v1/account/update-role',
       data: {'accountId': id, 'roleId': roleId},
     );
