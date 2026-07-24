@@ -222,38 +222,6 @@ class _CartTabState extends State<CartTab> {
                         Expanded(
                           child: OutlinedButton.icon(
                             onPressed: () =>
-                                setDialogState(() => selectedPayment = 'COD'),
-                            icon: Icon(
-                              Icons.money,
-                              color: selectedPayment == 'COD'
-                                  ? AppTheme.primaryOrange
-                                  : AppTheme.textGray,
-                            ),
-                            label: Text(
-                              'COD',
-                              style: TextStyle(
-                                color: selectedPayment == 'COD'
-                                    ? AppTheme.primaryOrange
-                                    : AppTheme.textGray,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: BorderSide(
-                                color: selectedPayment == 'COD'
-                                    ? AppTheme.primaryOrange
-                                    : Colors.grey.shade300,
-                                width: selectedPayment == 'COD' ? 2 : 1,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () =>
                                 setDialogState(() => selectedPayment = 'VNPAY'),
                             icon: Icon(
                               Icons.payment,
