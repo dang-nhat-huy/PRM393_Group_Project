@@ -1,5 +1,6 @@
 // lib/screens/customer/customer_home_screen.dart
 import 'package:flutter/material.dart';
+import 'package:fruit_store/core/constants/api_constants.dart';
 
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
@@ -39,7 +40,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
     _cartService = CartService(widget.apiService);
     _orderService = OrderService(widget.apiService);
 
-    _accountApiService = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
+    _accountApiService = ApiService(baseUrl: ApiConstants.authBaseUrl);
     // Sync the JWT token from the main API service
     _accountApiService.setToken(widget.apiService.accessToken);
   }

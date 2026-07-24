@@ -1,5 +1,6 @@
 // lib/screens/login/register_screen.dart
 import 'package:flutter/material.dart';
+import 'package:fruit_store/core/constants/api_constants.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
 import '../../services/auth.service.dart';
@@ -16,7 +17,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authApiService = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
+  final _authApiService = ApiService(baseUrl: ApiConstants.authBaseUrl);
   late final _authService = AuthService(_authApiService);
 
   bool _isLoading = false;

@@ -6,6 +6,9 @@
       <excludeFolder url="file://$MODULE_DIR$/fruit_store/.dart_tool" />
       <excludeFolder url="file://$MODULE_DIR$/fruit_store/.pub" />
       <excludeFolder url="file://$MODULE_DIR$/fruit_store/build" />
+      <excludeFolder url="file://$MODULE_DIR$/fruit_store/android/.gradle" />
+      <excludeFolder url="file://$MODULE_DIR$/fruit_store/android/.kotlin" />
+      <excludeFolder url="file://$MODULE_DIR$/fruit_store/android/app/build" />
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />

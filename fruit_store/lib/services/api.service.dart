@@ -1,6 +1,7 @@
 // lib/services/api.service.dart
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:fruit_store/core/constants/api_constants.dart';
 
 /// Central HTTP client for all API calls.
 ///
@@ -11,7 +12,7 @@ import 'package:flutter/material.dart';
 class ApiService {
   final Dio _dio;
 
-  ApiService({String baseUrl = 'https://scaling-chainsaw.onrender.com'})
+  ApiService({String baseUrl = ApiConstants.baseUrl})
     : _dio = Dio(
         BaseOptions(
           baseUrl: baseUrl,

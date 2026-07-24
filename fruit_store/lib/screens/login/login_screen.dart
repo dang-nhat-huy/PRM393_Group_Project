@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:fruit_store/core/constants/api_constants.dart';
 import 'package:fruit_store/screens/staff/staff_home_screen.dart';
 import '../../constants/app_theme.dart';
 import '../../services/api.service.dart';
@@ -17,7 +18,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _authApiService = ApiService(baseUrl: 'https://scaling-chainsaw-auth.onrender.com');
+  final _authApiService = ApiService(baseUrl: ApiConstants.authBaseUrl);
   final _mainApiService = ApiService();
   late final _authService = AuthService(_authApiService);
 
